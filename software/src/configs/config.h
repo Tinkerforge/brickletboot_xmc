@@ -30,7 +30,7 @@
 #include "config_default_bootloader.h"
 #endif
 
-#define UARTBB_TX_PIN P0_5
+#define UARTBB_TX_PIN P0_12
 
 #define BOOTLOADER_VERSION_MAJOR 1
 #define BOOTLOADER_VERSION_MINOR 0

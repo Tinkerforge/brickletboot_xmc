@@ -66,6 +66,8 @@ Optinal Improvement:
 #include <string.h>
 #include <stdint.h>
 
+#include "configs/config.h"
+
 #include "tfp_common.h"
 #include "xmc_spi.h"
 #include "xmc_gpio.h"
@@ -90,99 +92,95 @@ void spitfp_init(SPITFP *st) {
 
 
 	// USIC channel configuration
-	const XMC_SPI_CH_CONFIG_t SPI_SLAVE_0_channel_config = {
+	const XMC_SPI_CH_CONFIG_t channel_config = {
 	  .bus_mode     = XMC_SPI_CH_BUS_MODE_SLAVE,
 	  .parity_mode   = XMC_USIC_CH_PARITY_MODE_NONE
 	};
 
 	// MISO pin configuration
-	const XMC_GPIO_CONFIG_t SPI_SLAVE_0_miso_pin_config = {
-	#ifdef P1_1_AF_U0C0_DOUT0
-	  .mode             = (XMC_GPIO_MODE_OUTPUT_PUSH_PULL_ALT6 | P1_1_AF_U0C0_DOUT0),
-	#else
-	  .mode             = XMC_GPIO_MODE_OUTPUT_PUSH_PULL_ALT6,
-	#endif
+	const XMC_GPIO_CONFIG_t miso_pin_config = {
+	  .mode             = SPITFP_MISO_PIN_AF,
 	  .output_level     = XMC_GPIO_OUTPUT_LEVEL_HIGH
 	};
 
 	// MOSI pin configuration
-	const XMC_GPIO_CONFIG_t SPI_SLAVE_0_mosi_pin_config = {
+	const XMC_GPIO_CONFIG_t mosi_pin_config = {
 	  .mode             = XMC_GPIO_MODE_INPUT_TRISTATE,
 	  .output_level     = XMC_GPIO_OUTPUT_LEVEL_HIGH,
 	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_STANDARD
 	};
 
 	// SCLK pin configuration
-	const XMC_GPIO_CONFIG_t SPI_SLAVE_0_sclk_pin_config = {
+	const XMC_GPIO_CONFIG_t sclk_pin_config = {
 	  .mode             = XMC_GPIO_MODE_INPUT_TRISTATE,
 	  .output_level     = XMC_GPIO_OUTPUT_LEVEL_HIGH,
 	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_STANDARD
 	};
 
 	// SELIN pin configuration
-	const XMC_GPIO_CONFIG_t SPI_SLAVE_0_slavesel_pin_config = {
+	const XMC_GPIO_CONFIG_t slavesel_pin_config = {
 	  .mode             = XMC_GPIO_MODE_INPUT_TRISTATE,
 	  .output_level     = XMC_GPIO_OUTPUT_LEVEL_HIGH,
 	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_STANDARD
 	};
 
 	// Configure SCLK pin
-	XMC_GPIO_Init(P0_7, &SPI_SLAVE_0_sclk_pin_config);
+	XMC_GPIO_Init(SPITFP_SCLK_PIN, &sclk_pin_config);
 
 	// Configure slave select pin
-	XMC_GPIO_Init(P0_9, &SPI_SLAVE_0_slavesel_pin_config);
+	XMC_GPIO_Init(SPITFP_SELECT_PIN, &slavesel_pin_config);
 
 	//Configure MOSI pin
-	XMC_GPIO_Init(P2_0, &SPI_SLAVE_0_mosi_pin_config);
+	XMC_GPIO_Init(SPITFP_MOSI_PIN, &mosi_pin_config);
 
 	// Initialize USIC channel in SPI slave mode
-	XMC_SPI_CH_Init(XMC_SPI0_CH0, &SPI_SLAVE_0_channel_config);
-	XMC_SPI0_CH0->SCTR &= ~USIC_CH_SCTR_PDL_Msk; // Set passive data level to 0
+	XMC_SPI_CH_Init(SPITFP_USIC, &channel_config);
+	SPITFP_USIC->SCTR &= ~USIC_CH_SCTR_PDL_Msk; // Set passive data level to 0
 
-	XMC_SPI_CH_SetBitOrderMsbFirst(XMC_SPI0_CH0);
+	XMC_SPI_CH_SetBitOrderMsbFirst(SPITFP_USIC);
 
-	XMC_SPI_CH_SetWordLength(XMC_SPI0_CH0, (uint8_t)8U);
-	XMC_SPI_CH_SetFrameLength(XMC_SPI0_CH0, (uint8_t)64U);
+	XMC_SPI_CH_SetWordLength(SPITFP_USIC, (uint8_t)8U);
+	XMC_SPI_CH_SetFrameLength(SPITFP_USIC, (uint8_t)64U);
 
 	//Set input source path
-	XMC_SPI_CH_SetInputSource(XMC_SPI0_CH0, (XMC_SPI_CH_INPUT_t)XMC_USIC_CH_INPUT_DX0, 0b100); // DXnE -> MOSI -> P2_0
-	XMC_SPI_CH_SetInputSource(XMC_SPI0_CH0, (XMC_SPI_CH_INPUT_t)XMC_USIC_CH_INPUT_DX1, 0b010); // DXnC -> CLK  -> P0_7
-	XMC_SPI_CH_SetInputSource(XMC_SPI0_CH0, (XMC_SPI_CH_INPUT_t)XMC_USIC_CH_INPUT_DX2, 0b001); // DXnA -> SS   -> P0_9
-	XMC_SPI_CH_EnableInputInversion(XMC_SPI0_CH0, XMC_SPI_CH_INPUT_SLAVE_SELIN);
+	XMC_SPI_CH_SetInputSource(SPITFP_USIC, SPITFP_MOSI_INPUT,   SPITFP_MOSI_SOURCE);
+	XMC_SPI_CH_SetInputSource(SPITFP_USIC, SPITFP_SCLK_INPUT,   SPITFP_SCLK_SOURCE);
+	XMC_SPI_CH_SetInputSource(SPITFP_USIC, SPITFP_SELECT_INPUT, SPITFP_SELECT_SOURCE);
+	XMC_SPI_CH_EnableInputInversion(SPITFP_USIC, XMC_SPI_CH_INPUT_SLAVE_SELIN);
 
 	// SPI Mode 0: CPOL=0 and CPHA=0
-	USIC0_CH0->DX1CR |= USIC_CH_DX1CR_DPOL_Msk;
-	//USIC0_CH0->PCR |= USIC_CH_PCR_SSCMode_SLPHSEL_Msk; // This does not work, see errata USIC_AI.017
+	SPITFP_USIC_CHANNEL->DX1CR |= USIC_CH_DX1CR_DPOL_Msk;
+	//SPITFP_USIC_CHANNEL->PCR |= USIC_CH_PCR_SSCMode_SLPHSEL_Msk; // This does not work, see errata USIC_AI.017
 
 	// Configure transmit FIFO
-	XMC_USIC_CH_TXFIFO_Configure(XMC_SPI0_CH0, 16, XMC_USIC_CH_FIFO_SIZE_16WORDS, 8);
+	XMC_USIC_CH_TXFIFO_Configure(SPITFP_USIC, 16, XMC_USIC_CH_FIFO_SIZE_16WORDS, 8);
 
 	// Configure receive FIFO
-	XMC_USIC_CH_RXFIFO_Configure(XMC_SPI0_CH0, 0, XMC_USIC_CH_FIFO_SIZE_16WORDS, 0);
+	XMC_USIC_CH_RXFIFO_Configure(SPITFP_USIC, 0, XMC_USIC_CH_FIFO_SIZE_16WORDS, 0);
 
 	// Set service request for tx FIFO transmit interrupt
-	XMC_USIC_CH_TXFIFO_SetInterruptNodePointer(XMC_SPI0_CH0, XMC_USIC_CH_TXFIFO_INTERRUPT_NODE_POINTER_STANDARD, 1U);
+	XMC_USIC_CH_TXFIFO_SetInterruptNodePointer(SPITFP_USIC, XMC_USIC_CH_TXFIFO_INTERRUPT_NODE_POINTER_STANDARD, SPITFP_SERVICE_REQUEST_TX);  // IRQ SPITFP_IRQ_TX
 
 	// Set service request for rx FIFO receive interrupt
-	XMC_USIC_CH_RXFIFO_SetInterruptNodePointer(XMC_SPI0_CH0, XMC_USIC_CH_RXFIFO_INTERRUPT_NODE_POINTER_STANDARD, 0x0U);
-	XMC_USIC_CH_RXFIFO_SetInterruptNodePointer(XMC_SPI0_CH0, XMC_USIC_CH_RXFIFO_INTERRUPT_NODE_POINTER_ALTERNATE, 0x0U);
+	XMC_USIC_CH_RXFIFO_SetInterruptNodePointer(SPITFP_USIC, XMC_USIC_CH_RXFIFO_INTERRUPT_NODE_POINTER_STANDARD, SPITFP_SERVICE_REQUEST_RX);  // IRQ SPITFP_IRQ_RX
+	XMC_USIC_CH_RXFIFO_SetInterruptNodePointer(SPITFP_USIC, XMC_USIC_CH_RXFIFO_INTERRUPT_NODE_POINTER_ALTERNATE, SPITFP_SERVICE_REQUEST_RX); // IRQ SPITFP_IRQ_RX
 
 	//Set priority and enable NVIC node for transmit interrupt
-	NVIC_SetPriority((IRQn_Type)10, 3U);
-	NVIC_EnableIRQ((IRQn_Type)10);
+	NVIC_SetPriority((IRQn_Type)SPITFP_IRQ_TX, SPITFP_IRQ_TX_PRIORITY);
+	NVIC_EnableIRQ((IRQn_Type)SPITFP_IRQ_TX);
 
 	// Set priority and enable NVIC node for receive interrupt
-	NVIC_SetPriority((IRQn_Type)9, 2U);
-	NVIC_EnableIRQ((IRQn_Type)9);
+	NVIC_SetPriority((IRQn_Type)SPITFP_IRQ_RX, SPITFP_IRQ_RX_PRIORITY);
+	NVIC_EnableIRQ((IRQn_Type)SPITFP_IRQ_RX);
 
 	// Start SPI
-	XMC_SPI_CH_Start(XMC_SPI0_CH0);
+	XMC_SPI_CH_Start(SPITFP_USIC);
 
 	// Initialize SPI Slave MISO pin
-	XMC_GPIO_Init(P1_1, &SPI_SLAVE_0_miso_pin_config);
-	XMC_GPIO_SetHardwareControl(P1_1, XMC_GPIO_HWCTRL_DISABLED);
+	XMC_GPIO_Init(SPITFP_MISO_PIN, &miso_pin_config);
+	XMC_GPIO_SetHardwareControl(SPITFP_MISO_PIN, XMC_GPIO_HWCTRL_DISABLED);
 
-	XMC_USIC_CH_EnableEvent(XMC_SPI0_CH0, (uint32_t)((uint32_t)XMC_USIC_CH_EVENT_STANDARD_RECEIVE | (uint32_t)XMC_USIC_CH_EVENT_ALTERNATIVE_RECEIVE));
+	XMC_USIC_CH_EnableEvent(SPITFP_USIC, (uint32_t)((uint32_t)XMC_USIC_CH_EVENT_STANDARD_RECEIVE | (uint32_t)XMC_USIC_CH_EVENT_ALTERNATIVE_RECEIVE));
 }
 
 uint8_t spitfp_get_sequence_byte(SPITFP *st, const bool increase) {
@@ -214,8 +212,8 @@ void spitfp_send_ack_and_message(BootloaderStatus *bs, uint8_t *data, const uint
 	st->buffer_send[length + SPITFP_PROTOCOL_OVERHEAD-1] = checksum;
 
 	st->buffer_send_index = 0;
-	XMC_USIC_CH_TXFIFO_EnableEvent(XMC_SPI0_CH0, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
-	XMC_USIC_CH_TriggerServiceRequest(XMC_SPI0_CH0, 1);
+	XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
+	XMC_USIC_CH_TriggerServiceRequest(SPITFP_USIC, SPITFP_SERVICE_REQUEST_TX);
 
 	st->last_send_started = bs->system_timer_tick;
 }
@@ -230,8 +228,8 @@ void spitfp_send_ack(BootloaderStatus *bs) {
 	st->buffer_send_length = SPITFP_PROTOCOL_OVERHEAD;
 
 	st->buffer_send_index = 0;
-	XMC_USIC_CH_TXFIFO_EnableEvent(XMC_SPI0_CH0, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
-	XMC_USIC_CH_TriggerServiceRequest(XMC_SPI0_CH0, 1);
+	XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
+	XMC_USIC_CH_TriggerServiceRequest(SPITFP_USIC, SPITFP_SERVICE_REQUEST_TX);
 
 	st->last_send_started = bs->system_timer_tick;
 }
@@ -251,8 +249,8 @@ void spitfp_check_message_send_timeout(BootloaderStatus *bs) {
 
 		// We leave the old message the same and try again
 		bs->st.buffer_send_index = 0;
-		XMC_USIC_CH_TXFIFO_EnableEvent(XMC_SPI0_CH0, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
-		XMC_USIC_CH_TriggerServiceRequest(XMC_SPI0_CH0, 1);
+		XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
+		XMC_USIC_CH_TriggerServiceRequest(SPITFP_USIC, SPITFP_SERVICE_REQUEST_TX);
 	}
 }
 
