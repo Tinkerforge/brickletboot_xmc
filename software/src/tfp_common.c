@@ -236,7 +236,7 @@ BootloaderHandleMessageReturn tfp_common_set_write_firmware_pointer(const TFPCom
 	return HANDLE_MESSAGE_RETURN_EMPTY;
 }
 
-BootloaderHandleMessageReturn /*__attribute__ ((section (".ram_code")))*/ tfp_common_write_firmware(const TFPCommonWriteFirmware *data, void *_return_message, BootloaderStatus *bs) {
+BootloaderHandleMessageReturn tfp_common_write_firmware(const TFPCommonWriteFirmware *data, void *_return_message, BootloaderStatus *bs) {
 	if(bs->boot_mode != BOOT_MODE_BOOTLOADER) {
 		return HANDLE_MESSAGE_RETURN_NOT_SUPPORTED;
 	}
@@ -258,9 +258,7 @@ BootloaderHandleMessageReturn /*__attribute__ ((section (".ram_code")))*/ tfp_co
 	if(chunk_num == ((TFP_COMMON_XMC1_PAGE_SIZE/TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE) - 1)) {
 		__disable_irq();
 		XMC_FLASH_ErasePage((uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + (tfp_common_firmware_pointer & TFP_COMMON_XMC1_PAGE_MASK)));
-//		for(uint32_t i = 0; i < TFP_FLASH_ERASE_WAIT_CYCLES; i++) {	__NOP(); }
 		XMC_FLASH_ProgramVerifyPage((uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + (tfp_common_firmware_pointer & TFP_COMMON_XMC1_PAGE_MASK)), (uint32_t*)tfp_common_firmware_page);
-//		for(uint32_t i = 0; i < TFP_FLASH_ERASE_WAIT_CYCLES; i++) {	__NOP(); }
 		__enable_irq();
 	}
 
