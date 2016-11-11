@@ -190,7 +190,6 @@ uint32_t tfp_common_get_uid(void) {
 
 BootloaderHandleMessageReturn tfp_common_set_bootloader_mode(const TFPCommonSetBootloaderMode *data, void *_return_message, BootloaderStatus *bs) {
 	TFPCommonSetBootloaderModeReturn *sbmr = _return_message;
-	sbmr->header = data->header;
 	sbmr->header.length = sizeof(TFPCommonSetBootloaderModeReturn);
 
 	if(data->mode > BOOT_MODE_FIRMWARE) {
@@ -218,7 +217,6 @@ BootloaderHandleMessageReturn tfp_common_set_bootloader_mode(const TFPCommonSetB
 
 BootloaderHandleMessageReturn tfp_common_get_bootloader_mode(const TFPCommonGetBootloaderMode *data, void *_return_message, BootloaderStatus *bs) {
 	TFPCommonGetBootloaderModeReturn *gbmr = _return_message;
-	gbmr->header = data->header;
 	gbmr->header.length = sizeof(TFPCommonGetBootloaderModeReturn);
 
 	gbmr->mode = bs->boot_mode;
@@ -242,7 +240,6 @@ BootloaderHandleMessageReturn tfp_common_write_firmware(const TFPCommonWriteFirm
 	}
 
 	TFPCommonWriteFirmwareReturn *wfr = _return_message;
-	wfr->header = data->header;
 	wfr->header.length = sizeof(TFPCommonWriteFirmwareReturn);
 
 	if((tfp_common_firmware_pointer > (BOOTLOADER_FIRMWARE_SIZE-TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE)) ||
@@ -286,7 +283,6 @@ BootloaderHandleMessageReturn tfp_common_set_status_led_config(const TFPCommonSe
 
 BootloaderHandleMessageReturn tfp_common_get_status_led_config(const TFPCommonGetStatusLEDConfig *data, void *_return_message, BootloaderStatus *bs) {
 	TFPCommonGetStatusLEDConfigReturn *gslcr = _return_message;
-	gslcr->header = data->header;
 	gslcr->header.length = sizeof(TFPCommonGetStatusLEDConfigReturn);
 
 	gslcr->config = bs->status_led_config;
@@ -296,7 +292,6 @@ BootloaderHandleMessageReturn tfp_common_get_status_led_config(const TFPCommonGe
 
 BootloaderHandleMessageReturn tfp_common_get_chip_temperature(const TFPCommonGetChipTemperature *data, void *_return_message) {
 	TFPCommonGetChipTemperatureReturn *gctr = _return_message;
-	gctr->header        = data->header;
 	gctr->header.length = sizeof(TFPCommonGetChipTemperatureReturn);
 	gctr->temperature   = XMC_SCU_CalcTemperature() - 273;
 
@@ -319,7 +314,6 @@ BootloaderHandleMessageReturn tfp_common_reset(const TFPCommonReset *data, void 
 
 BootloaderHandleMessageReturn tfp_common_get_identity(const TFPCommonGetIdentity *data, void *_return_message) {
 	TFPCommonGetIdentityReturn *gir = _return_message;
-	gir->header        = data->header;
 	gir->header.uid    = tfp_common_get_uid();
 	gir->header.length = sizeof(TFPCommonGetIdentityReturn);
 
@@ -422,7 +416,10 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	}
 #endif
 
+	// Copy header in return message, this has to be done for most of the functions anyway
 	uint8_t return_message[TFP_COMMON_RETURN_MESSAGE_LENGTH];
+	memcpy(return_message, message, sizeof(TFPMessageHeader));
+
 	BootloaderHandleMessageReturn handle_message_return = HANDLE_MESSAGE_RETURN_EMPTY;
 
 	switch(tfp_get_fid_from_message(message)) {
