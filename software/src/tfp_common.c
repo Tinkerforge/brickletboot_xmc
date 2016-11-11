@@ -174,8 +174,8 @@ typedef struct {
 #define TFP_COMMON_RETURN_MESSAGE_LENGTH 80
 
 
-// This is not available if called from outside of bootloader, make sure that
-// it is only used in bootloader mode!
+// This global RAM is _not_ available if called from outside of bootloader,
+// make sure that it is only used in bootloader mode!
 static uint32_t tfp_common_firmware_pointer = 0;
 static uint8_t tfp_common_firmware_page[TFP_COMMON_XMC1_PAGE_SIZE];
 
