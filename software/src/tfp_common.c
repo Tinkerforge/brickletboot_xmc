@@ -78,7 +78,7 @@ typedef struct {
 typedef struct {
 	TFPMessageHeader header;
 	uint8_t status;
-} __attribute__((__packed__)) TFPCommonSetBootloaderModeReturn;
+} __attribute__((__packed__)) TFPCommonSetBootloaderModeResponse;
 
 typedef struct {
 	TFPMessageHeader header;
@@ -87,7 +87,7 @@ typedef struct {
 typedef struct {
 	TFPMessageHeader header;
 	uint8_t mode;
-} __attribute__((__packed__)) TFPCommonGetBootloaderModeReturn;
+} __attribute__((__packed__)) TFPCommonGetBootloaderModeResponse;
 
 typedef struct {
 	TFPMessageHeader header;
@@ -102,7 +102,7 @@ typedef struct {
 typedef struct {
 	TFPMessageHeader header;
 	uint8_t status;
-} __attribute__((__packed__)) TFPCommonWriteFirmwareReturn;
+} __attribute__((__packed__)) TFPCommonWriteFirmwareResponse;
 
 typedef struct {
 	TFPMessageHeader header;
@@ -116,7 +116,7 @@ typedef struct {
 typedef struct {
 	TFPMessageHeader header;
 	uint8_t config;
-} __attribute__((__packed__)) TFPCommonGetStatusLEDConfigReturn;
+} __attribute__((__packed__)) TFPCommonGetStatusLEDConfigResponse;
 
 typedef struct {
 	TFPMessageHeader header;
@@ -125,7 +125,7 @@ typedef struct {
 typedef struct {
 	TFPMessageHeader header;
 	int16_t temperature;
-} __attribute__((__packed__)) TFPCommonGetChipTemperatureReturn;
+} __attribute__((__packed__)) TFPCommonGetChipTemperatureResponse;
 
 typedef struct {
 	TFPMessageHeader header;
@@ -134,7 +134,7 @@ typedef struct {
 typedef struct {
 	TFPMessageHeader header;
 	uint32_t uid;
-} __attribute__((packed)) TFPCommonCoMCUEnumerateReturn;
+} __attribute__((packed)) TFPCommonCoMCUEnumerateResponse;
 
 typedef struct {
 	TFPMessageHeader header;
@@ -167,11 +167,11 @@ typedef struct {
 	uint8_t version_hw[TFP_COMMON_ENUMERATE_CALLBACK_VERSION_LENGTH];
 	uint8_t version_fw[TFP_COMMON_ENUMERATE_CALLBACK_VERSION_LENGTH];
 	uint16_t device_identifier;
-} __attribute__((__packed__)) TFPCommonGetIdentityReturn;
+} __attribute__((__packed__)) TFPCommonGetIdentityResponse;
 
 #define TFP_FLASH_ERASE_WAIT_CYCLES 100000
 
-#define TFP_COMMON_RETURN_MESSAGE_LENGTH 80
+#define TFP_COMMON_RESPONSE_MESSAGE_LENGTH 80
 
 
 // This global RAM is _not_ available if called from outside of bootloader,
@@ -188,64 +188,61 @@ uint32_t tfp_common_get_uid(void) {
 	return 12345; //
 }
 
-BootloaderHandleMessageReturn tfp_common_set_bootloader_mode(const TFPCommonSetBootloaderMode *data, void *_return_message, BootloaderStatus *bs) {
-	TFPCommonSetBootloaderModeReturn *sbmr = _return_message;
-	sbmr->header.length = sizeof(TFPCommonSetBootloaderModeReturn);
+BootloaderHandleMessageResponse tfp_common_set_bootloader_mode(const TFPCommonSetBootloaderMode *data, TFPCommonSetBootloaderModeResponse *response, BootloaderStatus *bs) {
+	response->header.length = sizeof(TFPCommonSetBootloaderModeResponse);
 
 	if(data->mode > BOOT_MODE_FIRMWARE) {
-		sbmr->status = TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_INVALID_MODE;
+		response->status = TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_INVALID_MODE;
 	} else if(bs->boot_mode == data->mode) {
-		sbmr->status = TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_NO_CHANGE;
+		response->status = TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_NO_CHANGE;
 	} else if(data->mode == BOOT_MODE_BOOTLOADER) {
 		// From Firmware to Bootloader
-		sbmr->status = TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_OK;
+		response->status = TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_OK;
 
 		bs->boot_mode = BOOT_MODE_FIRMWARE_WAIT_FOR_ERASE_AND_REBOOT;
 		bs->reboot_started_at = bs->system_timer_tick;
 	} else if(data->mode == BOOT_MODE_FIRMWARE) {
 		// From Bootloader to Firmware
-		sbmr->status = boot_can_jump_to_firmware();
-		if(sbmr->status == TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_OK) {
+		response->status = boot_can_jump_to_firmware();
+		if(response->status == TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_OK) {
 			bs->boot_mode = BOOT_MODE_BOOTLOADER_WAIT_FOR_REBOOT;
 			bs->reboot_started_at = bs->system_timer_tick;
 		}
 	}
 
-	return HANDLE_MESSAGE_RETURN_NEW_MESSAGE;
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
 
-BootloaderHandleMessageReturn tfp_common_get_bootloader_mode(const TFPCommonGetBootloaderMode *data, void *_return_message, BootloaderStatus *bs) {
-	TFPCommonGetBootloaderModeReturn *gbmr = _return_message;
-	gbmr->header.length = sizeof(TFPCommonGetBootloaderModeReturn);
+BootloaderHandleMessageResponse tfp_common_get_bootloader_mode(const TFPCommonGetBootloaderMode *data, TFPCommonGetBootloaderModeResponse *response, BootloaderStatus *bs) {
+	response->header.length = sizeof(TFPCommonGetBootloaderModeResponse);
 
-	gbmr->mode = bs->boot_mode;
+	response->mode = bs->boot_mode;
 
-	return HANDLE_MESSAGE_RETURN_NEW_MESSAGE;
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
-BootloaderHandleMessageReturn tfp_common_set_write_firmware_pointer(const TFPCommonSetWriteFirmwarePointer *data, void *_return_message, BootloaderStatus *bs) {
+BootloaderHandleMessageResponse tfp_common_set_write_firmware_pointer(const TFPCommonSetWriteFirmwarePointer *data, BootloaderStatus *bs) {
 	if(bs->boot_mode != BOOT_MODE_BOOTLOADER) {
-		return HANDLE_MESSAGE_RETURN_NOT_SUPPORTED;
+		return HANDLE_MESSAGE_RESPONSE_NOT_SUPPORTED;
 	}
 
 	tfp_common_firmware_pointer = data->pointer;
 
-	return HANDLE_MESSAGE_RETURN_EMPTY;
+	return HANDLE_MESSAGE_RESPONSE_EMPTY;
 }
 
-BootloaderHandleMessageReturn tfp_common_write_firmware(const TFPCommonWriteFirmware *data, void *_return_message, BootloaderStatus *bs) {
+BootloaderHandleMessageResponse tfp_common_write_firmware(const TFPCommonWriteFirmware *data, TFPCommonWriteFirmwareResponse *response, BootloaderStatus *bs) {
 	if(bs->boot_mode != BOOT_MODE_BOOTLOADER) {
-		return HANDLE_MESSAGE_RETURN_NOT_SUPPORTED;
+		return HANDLE_MESSAGE_RESPONSE_NOT_SUPPORTED;
 	}
 
-	TFPCommonWriteFirmwareReturn *wfr = _return_message;
-	wfr->header.length = sizeof(TFPCommonWriteFirmwareReturn);
+	response->header.length = sizeof(TFPCommonWriteFirmwareResponse);
 
 	if((tfp_common_firmware_pointer > (BOOTLOADER_FIRMWARE_SIZE-TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE)) ||
 	   ((tfp_common_firmware_pointer % TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE) != 0)) {
-		wfr->status = TFP_COMMON_WRITE_FIRMWARE_STATUS_INVALID_POINTER;
-		return HANDLE_MESSAGE_RETURN_INVALID_PARAMETER;
+		response->status = TFP_COMMON_WRITE_FIRMWARE_STATUS_INVALID_POINTER;
+		return HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER;
 	}
 
 	const uint8_t chunk_num = (tfp_common_firmware_pointer/TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE) % (TFP_COMMON_XMC1_PAGE_SIZE/TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE);
@@ -259,14 +256,14 @@ BootloaderHandleMessageReturn tfp_common_write_firmware(const TFPCommonWriteFirm
 		__enable_irq();
 	}
 
-	wfr->status = TFP_COMMON_WRITE_FIRMWARE_STATUS_OK;
+	response->status = TFP_COMMON_WRITE_FIRMWARE_STATUS_OK;
 
-	return HANDLE_MESSAGE_RETURN_NEW_MESSAGE;
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
-BootloaderHandleMessageReturn tfp_common_set_status_led_config(const TFPCommonSetStatusLEDConfig *data, void *_return_message, BootloaderStatus *bs) {
+BootloaderHandleMessageResponse tfp_common_set_status_led_config(const TFPCommonSetStatusLEDConfig *data, BootloaderStatus *bs) {
 	if(data->config >= TFP_COMMON_STATUS_LED_SHOW_COMMUNICATION_STATUS) {
-		return HANDLE_MESSAGE_RETURN_INVALID_PARAMETER;
+		return HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER;
 	}
 
 	bs->status_led_config = data->config;
@@ -278,27 +275,25 @@ BootloaderHandleMessageReturn tfp_common_set_status_led_config(const TFPCommonSe
 		XMC_GPIO_SetOutputLow(BOOTLOADER_STATUS_LED_PIN);
 	}
 
-	return HANDLE_MESSAGE_RETURN_EMPTY;
+	return HANDLE_MESSAGE_RESPONSE_EMPTY;
 }
 
-BootloaderHandleMessageReturn tfp_common_get_status_led_config(const TFPCommonGetStatusLEDConfig *data, void *_return_message, BootloaderStatus *bs) {
-	TFPCommonGetStatusLEDConfigReturn *gslcr = _return_message;
-	gslcr->header.length = sizeof(TFPCommonGetStatusLEDConfigReturn);
+BootloaderHandleMessageResponse tfp_common_get_status_led_config(const TFPCommonGetStatusLEDConfig *data, TFPCommonGetStatusLEDConfigResponse *response, BootloaderStatus *bs) {
+	response->header.length = sizeof(TFPCommonGetStatusLEDConfigResponse);
 
-	gslcr->config = bs->status_led_config;
+	response->config = bs->status_led_config;
 
-	return HANDLE_MESSAGE_RETURN_NEW_MESSAGE;
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
-BootloaderHandleMessageReturn tfp_common_get_chip_temperature(const TFPCommonGetChipTemperature *data, void *_return_message) {
-	TFPCommonGetChipTemperatureReturn *gctr = _return_message;
-	gctr->header.length = sizeof(TFPCommonGetChipTemperatureReturn);
-	gctr->temperature   = XMC_SCU_CalcTemperature() - 273;
+BootloaderHandleMessageResponse tfp_common_get_chip_temperature(const TFPCommonGetChipTemperature *data, TFPCommonGetChipTemperatureResponse *response) {
+	response->header.length = sizeof(TFPCommonGetChipTemperatureResponse);
+	response->temperature   = XMC_SCU_CalcTemperature() - 273;
 
-	return HANDLE_MESSAGE_RETURN_NEW_MESSAGE;
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
-BootloaderHandleMessageReturn tfp_common_reset(const TFPCommonReset *data, void *_return_message, BootloaderStatus *bs) {
+BootloaderHandleMessageResponse tfp_common_reset(const TFPCommonReset *data, BootloaderStatus *bs) {
 	if(bs->boot_mode == BOOT_MODE_BOOTLOADER) {
 		bs->boot_mode = BOOT_MODE_BOOTLOADER_WAIT_FOR_REBOOT;
 		bs->reboot_started_at = bs->system_timer_tick;
@@ -309,58 +304,56 @@ BootloaderHandleMessageReturn tfp_common_reset(const TFPCommonReset *data, void 
 
 	// We can ignore all other cases, in the other cases we will be rebooting shortly anyway
 
-	return HANDLE_MESSAGE_RETURN_EMPTY;
+	return HANDLE_MESSAGE_RESPONSE_EMPTY;
 }
 
-BootloaderHandleMessageReturn tfp_common_get_identity(const TFPCommonGetIdentity *data, void *_return_message) {
-	TFPCommonGetIdentityReturn *gir = _return_message;
-	gir->header.uid    = tfp_common_get_uid();
-	gir->header.length = sizeof(TFPCommonGetIdentityReturn);
+BootloaderHandleMessageResponse tfp_common_get_identity(const TFPCommonGetIdentity *data, TFPCommonGetIdentityResponse *response) {
+	response->header.uid    = tfp_common_get_uid();
+	response->header.length = sizeof(TFPCommonGetIdentityResponse);
 
-	tfp_uid_uint32_to_base58(tfp_common_get_uid(), gir->uid);
-	memset(gir->connected_uid, 0, TFP_COMMON_ENUMERATE_CALLBACK_UID_LENGTH);
+	tfp_uid_uint32_to_base58(tfp_common_get_uid(), response->uid);
+	memset(response->connected_uid, 0, TFP_COMMON_ENUMERATE_CALLBACK_UID_LENGTH);
 
-	gir->version_hw[0] = BOOTLOADER_HW_VERSION_MAJOR;
-	gir->version_hw[1] = BOOTLOADER_HW_VERSION_MINOR;
-	gir->version_hw[2] = BOOTLOADER_HW_VERSION_REVISION;
+	response->version_hw[0] = BOOTLOADER_HW_VERSION_MAJOR;
+	response->version_hw[1] = BOOTLOADER_HW_VERSION_MINOR;
+	response->version_hw[2] = BOOTLOADER_HW_VERSION_REVISION;
 
-	gir->version_fw[0] = (BOOTLOADER_FIRMWARE_CONFIGURATION_POINTER->firmware_version >> 16) & 0xFF;
-	gir->version_fw[1] = (BOOTLOADER_FIRMWARE_CONFIGURATION_POINTER->firmware_version >> 8)  & 0xFF;
-	gir->version_fw[2] = (BOOTLOADER_FIRMWARE_CONFIGURATION_POINTER->firmware_version >> 0)  & 0xFF;
+	response->version_fw[0] = (BOOTLOADER_FIRMWARE_CONFIGURATION_POINTER->firmware_version >> 16) & 0xFF;
+	response->version_fw[1] = (BOOTLOADER_FIRMWARE_CONFIGURATION_POINTER->firmware_version >> 8)  & 0xFF;
+	response->version_fw[2] = (BOOTLOADER_FIRMWARE_CONFIGURATION_POINTER->firmware_version >> 0)  & 0xFF;
 
-	gir->device_identifier = BOOTLOADER_DEVICE_IDENTIFIER;
+	response->device_identifier = BOOTLOADER_DEVICE_IDENTIFIER;
 
-	return HANDLE_MESSAGE_RETURN_NEW_MESSAGE;
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
-BootloaderHandleMessageReturn tfp_common_enumerate(const TFPCommonEnumerate *data, void *_return_message) {
+BootloaderHandleMessageResponse tfp_common_enumerate(const TFPCommonEnumerate *data, TFPCommonEnumerateCallback *response) {
 	// The function itself does not return anything, but we return the callback here instead.
 	// We use get_identity for uids, fw version and hw version.
 	// The layout of the struct it the same.
-	tfp_common_get_identity((void*)data, _return_message);
+	tfp_common_get_identity((void*)data, response);
 
-	TFPCommonEnumerateCallback *ec = _return_message;
-	ec->header.length           = sizeof(TFPCommonEnumerateCallback);
-	ec->header.fid              = TFP_COMMON_FID_ENUMERATE_CALLBACK;
-	ec->header.sequence_num     = 0; // Sequence number for callback is 0
-	ec->header.return_expected  = 1;
-	ec->header.authentication   = 0; // TODO
-	ec->header.other_options    = 0;
-	ec->header.error            = 0;
-	ec->header.future_use       = 0;
+	response->header.length           = sizeof(TFPCommonEnumerateCallback);
+	response->header.fid              = TFP_COMMON_FID_ENUMERATE_CALLBACK;
+	response->header.sequence_num     = 0; // Sequence number for callback is 0
+	response->header.return_expected  = 1;
+	response->header.authentication   = 0; // TODO
+	response->header.other_options    = 0;
+	response->header.error            = 0;
+	response->header.future_use       = 0;
 
-	ec->enumeration_type = TFP_COMMON_ENUMERATE_TYPE_AVAILABLE;
+	response->enumeration_type = TFP_COMMON_ENUMERATE_TYPE_AVAILABLE;
 
-	return HANDLE_MESSAGE_RETURN_NEW_MESSAGE;
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
-BootloaderHandleMessageReturn tfp_common_co_mcu_enumerate(const TFPCommonCoMCUEnumerate *data, void *_return_message) {
+BootloaderHandleMessageResponse tfp_common_co_mcu_enumerate(const TFPCommonCoMCUEnumerate *data, TFPCommonEnumerateCallback *response) {
 	// This is the same as enumerate, but with TFP_COMMON_ENUMERATE_TYPE_ADDED (initial enumerate)
 	// This gets triggered by the Brick
-	tfp_common_enumerate((void*)data, _return_message);
-	((TFPCommonEnumerateCallback*)data)->enumeration_type = TFP_COMMON_ENUMERATE_TYPE_ADDED;
+	tfp_common_enumerate((void*)data, response);
+	response->enumeration_type = TFP_COMMON_ENUMERATE_TYPE_ADDED;
 
-	return HANDLE_MESSAGE_RETURN_NEW_MESSAGE;
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
 void tfp_common_handle_reset(BootloaderStatus *bs) {
@@ -416,29 +409,30 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	}
 #endif
 
-	// Copy header in return message, this has to be done for most of the functions anyway
-	uint8_t return_message[TFP_COMMON_RETURN_MESSAGE_LENGTH];
-	memcpy(return_message, message, sizeof(TFPMessageHeader));
+	// Copy header in response, this has to be done for most of the functions anyway
+	uint8_t buffer[TFP_COMMON_RESPONSE_MESSAGE_LENGTH];
+	void *response = buffer;
+	memcpy(response, message, sizeof(TFPMessageHeader));
 
-	BootloaderHandleMessageReturn handle_message_return = HANDLE_MESSAGE_RETURN_EMPTY;
+	BootloaderHandleMessageResponse handle_message_return = HANDLE_MESSAGE_RESPONSE_EMPTY;
 
 	switch(tfp_get_fid_from_message(message)) {
-		case TFP_COMMON_FID_SET_BOOTLOADER_MODE:        handle_message_return = tfp_common_set_bootloader_mode(message, return_message, bs);        break;
-		case TFP_COMMON_FID_GET_BOOTLOADER_MODE:        handle_message_return = tfp_common_get_bootloader_mode(message, return_message, bs);        break;
-		case TFP_COMMON_FID_SET_WRITE_FIRMWARE_POINTER: handle_message_return = tfp_common_set_write_firmware_pointer(message, return_message, bs); break;
-		case TFP_COMMON_FID_WRITE_FIRMWARE:             handle_message_return = tfp_common_write_firmware(message, return_message, bs);             break;
-		case TFP_COMMON_FID_SET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_set_status_led_config(message, return_message, bs);      break;
-		case TFP_COMMON_FID_GET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_get_status_led_config(message, return_message, bs);      break;
-		case TFP_COMMON_FID_GET_CHIP_TEMPERATURE:       handle_message_return = tfp_common_get_chip_temperature(message, return_message);           break;
-		case TFP_COMMON_FID_RESET:                      handle_message_return = tfp_common_reset(message, return_message, bs);                      break;
-		case TFP_COMMON_FID_CO_MCU_ENUMERATE:           handle_message_return = tfp_common_co_mcu_enumerate(message, return_message);               break;
-		case TFP_COMMON_FID_ENUMERATE:                  handle_message_return = tfp_common_enumerate(message, return_message);                      break;
-		case TFP_COMMON_FID_GET_IDENTITY:               handle_message_return = tfp_common_get_identity(message, return_message);                   break;
+		case TFP_COMMON_FID_SET_BOOTLOADER_MODE:        handle_message_return = tfp_common_set_bootloader_mode(message, response, bs);   break;
+		case TFP_COMMON_FID_GET_BOOTLOADER_MODE:        handle_message_return = tfp_common_get_bootloader_mode(message, response, bs);   break;
+		case TFP_COMMON_FID_SET_WRITE_FIRMWARE_POINTER: handle_message_return = tfp_common_set_write_firmware_pointer(message, bs);      break;
+		case TFP_COMMON_FID_WRITE_FIRMWARE:             handle_message_return = tfp_common_write_firmware(message, response, bs);        break;
+		case TFP_COMMON_FID_SET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_set_status_led_config(message, bs);           break;
+		case TFP_COMMON_FID_GET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_get_status_led_config(message, response, bs); break;
+		case TFP_COMMON_FID_GET_CHIP_TEMPERATURE:       handle_message_return = tfp_common_get_chip_temperature(message, response);      break;
+		case TFP_COMMON_FID_RESET:                      handle_message_return = tfp_common_reset(message,  bs);                          break;
+		case TFP_COMMON_FID_CO_MCU_ENUMERATE:           handle_message_return = tfp_common_co_mcu_enumerate(message, response);          break;
+		case TFP_COMMON_FID_ENUMERATE:                  handle_message_return = tfp_common_enumerate(message, response);                 break;
+		case TFP_COMMON_FID_GET_IDENTITY:               handle_message_return = tfp_common_get_identity(message, response);              break;
 		default: {
 			if(bs->boot_mode == BOOT_MODE_FIRMWARE) {
-				handle_message_return = bs->firmware_handle_message_func(message, return_message);
+				handle_message_return = bs->firmware_handle_message_func(message, response);
 			} else {
-				handle_message_return = HANDLE_MESSAGE_RETURN_NOT_SUPPORTED;
+				handle_message_return = HANDLE_MESSAGE_RESPONSE_NOT_SUPPORTED;
 			}
 
 			break;
@@ -446,11 +440,11 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	}
 
 	bool has_message = true;
-	if(handle_message_return != HANDLE_MESSAGE_RETURN_NEW_MESSAGE) {
+	if(handle_message_return != HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE) {
 		has_message = tfp_is_return_expected(message);
 		if(has_message) {
 			TFPMessageHeader *in_header = (TFPMessageHeader*)message;
-			TFPMessageHeader *ret_header = (TFPMessageHeader*)return_message;
+			TFPMessageHeader *ret_header = (TFPMessageHeader*)response;
 
 			// Copy header from incoming message to outgoing message
 			*ret_header = *in_header;
@@ -458,16 +452,16 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 			// For these empty and error returns there is no payload (i.e. length = min length)
 			ret_header->length = TFP_MESSAGE_MIN_LENGTH;
 			switch(handle_message_return) {
-				case HANDLE_MESSAGE_RETURN_EMPTY:             ret_header->error = TFP_MESSAGE_ERROR_CODE_OK;                break;
-				case HANDLE_MESSAGE_RETURN_NOT_SUPPORTED:     ret_header->error = TFP_MESSAGE_ERROR_CODE_NOT_SUPPORTED;     break;
-				case HANDLE_MESSAGE_RETURN_INVALID_PARAMETER: ret_header->error = TFP_MESSAGE_ERROR_CODE_INVALID_PARAMETER; break;
+				case HANDLE_MESSAGE_RESPONSE_EMPTY:             ret_header->error = TFP_MESSAGE_ERROR_CODE_OK;                break;
+				case HANDLE_MESSAGE_RESPONSE_NOT_SUPPORTED:     ret_header->error = TFP_MESSAGE_ERROR_CODE_NOT_SUPPORTED;     break;
+				case HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER: ret_header->error = TFP_MESSAGE_ERROR_CODE_INVALID_PARAMETER; break;
 				default: break;
 			}
 		}
 	}
 
 	if(has_message) {
-		spitfp_send_ack_and_message(bs, return_message, tfp_get_length_from_message(return_message));
+		spitfp_send_ack_and_message(bs, response, tfp_get_length_from_message(response));
 	} else {
 		spitfp_send_ack(bs);
 	}
