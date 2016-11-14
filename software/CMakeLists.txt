@@ -82,6 +82,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/src/bricklib2/cmake/configs/config_define_ex
 
 # define standard compile and linker flags
 SET(LINKER_SCRIPT_NAME xmc1100_brickletboot.ld)
+SET(FLASH_LENGTH 0x2000) # Bootloader has always size 8kb, independent of available flash
 include(${CMAKE_CURRENT_SOURCE_DIR}/src/bricklib2/cmake/configs/config_comcu_add_standard_flags.txt)
 
 # add custom build commands
