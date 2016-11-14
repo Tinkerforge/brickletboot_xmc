@@ -28,11 +28,11 @@ INCLUDE_DIRECTORIES(
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/xmclib/CMSIS/Include/"
 )
 
-if(CHIP STREQUAL "XMC1100_Q024x0016")
+if(CHIP MATCHES "^XMC11.*$")
 INCLUDE_DIRECTORIES(
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/xmclib/CMSIS/Infineon/XMC1100_series/Include/"
 )
-elseif(CHIP STREQUAL "XMC1403_Q048x0064")
+elseif(CHIP MATCHES "^XMC14.*")
 INCLUDE_DIRECTORIES(
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/xmclib/CMSIS/Infineon/XMC1400_series/Include/"
 )
@@ -65,11 +65,11 @@ SET(SOURCES
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/xmclib/XMCLib/src/xmc1_flash.c"
 )
 
-if(CHIP STREQUAL "XMC1100_Q024x0016")
+if(CHIP MATCHES "^XMC11.*$")
 SET(SOURCES "${SOURCES}"
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/startup/startup_xmc1100.S"
 )
-elseif(CHIP STREQUAL "XMC1403_Q048x0064")
+elseif(CHIP MATCHES "^XMC14.*")
 SET(SOURCES "${SOURCES}"
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/startup/startup_xmc1400.S"
 )
