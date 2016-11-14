@@ -331,7 +331,7 @@ BootloaderHandleMessageResponse tfp_common_enumerate(const TFPCommonEnumerate *d
 	// The function itself does not return anything, but we return the callback here instead.
 	// We use get_identity for uids, fw version and hw version.
 	// The layout of the struct it the same.
-	tfp_common_get_identity((void*)data, response);
+	tfp_common_get_identity((void*)data, (void*)response);
 
 	response->header.length           = sizeof(TFPCommonEnumerateCallback);
 	response->header.fid              = TFP_COMMON_FID_ENUMERATE_CALLBACK;
