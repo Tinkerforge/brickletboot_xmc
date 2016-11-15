@@ -48,6 +48,12 @@ For Bricklets with co-processor we use the following flash memory map
 
 #include "bricklib2/bootloader/bootloader.h"
 
+#if UC_SERIES == XMC11  || UC_SERIES == XMC12 || UC_SERIES == XMC13
+#define TICK_COUNT_FOR_1MS 24 // 24 ticks @32mhz = 1ms
+#elif UC_SERIES == XMC14
+#define TICK_COUNT_FOR_1MS 36 // 36 ticks @48mhz = 1ms
+#endif
+
 const uint32_t device_identifier __attribute__ ((section(".device_identifier"))) = BOOTLOADER_DEVICE_IDENTIFIER;
 const uint32_t bootloader_version __attribute__ ((section(".bootloader_version"))) = (BOOTLOADER_VERSION_MAJOR << 16) | (BOOTLOADER_VERSION_MINOR << 8) | (BOOTLOADER_VERSION_REVISION << 0);
 
@@ -82,7 +88,7 @@ int main(void) {
 	uint8_t tick_counter = 0;
 	while(true) {
 		tick_counter++;
-		if(tick_counter >= 24) { // We call spitfp_tick aprox. 24 times per ms
+		if(tick_counter >= TICK_COUNT_FOR_1MS) {
 			bootloader_status.system_timer_tick++;
 			tick_counter = 0;
 		}
