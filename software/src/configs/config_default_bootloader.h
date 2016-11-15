@@ -63,6 +63,14 @@
 #define SPITFP_IRQ_TX               10
 #define SPITFP_IRQ_TX_PRIORITY      3
 
+#define SPITFP_TX_DATA_POINTER 16
+#define SPITFP_TX_SIZE         XMC_USIC_CH_FIFO_SIZE_16WORDS
+#define SPITFP_TX_LIMIT        8
+
+#define SPITFP_RX_DATA_POINTER 0
+#define SPITFP_RX_SIZE         XMC_USIC_CH_FIFO_SIZE_16WORDS
+#define SPITFP_RX_LIMIT        0
+
 // --- BOOTLOADER FUNCTIONS ---
 
 // define bootloader functions to put them into the BootloaderFunctions struct
