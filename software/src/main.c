@@ -58,10 +58,10 @@ const uint32_t device_identifier __attribute__ ((section(".device_identifier")))
 const uint32_t bootloader_version __attribute__ ((section(".bootloader_version"))) = (BOOTLOADER_VERSION_MAJOR << 16) | (BOOTLOADER_VERSION_MINOR << 8) | (BOOTLOADER_VERSION_REVISION << 0);
 
 void main_led_init(void) {
-	XMC_GPIO_SetMode(P0_0, XMC_GPIO_MODE_OUTPUT_PUSH_PULL);
-	XMC_GPIO_SetMode(P0_1, XMC_GPIO_MODE_OUTPUT_PUSH_PULL);
-	XMC_GPIO_SetMode(BOOTLOADER_STATUS_LED_PIN, XMC_GPIO_MODE_OUTPUT_PUSH_PULL);
-	XMC_GPIO_SetOutputHigh(BOOTLOADER_STATUS_LED_PIN);
+	XMC_GPIO_CONFIG_t led;
+	led.mode = XMC_GPIO_MODE_OUTPUT_PUSH_PULL;
+	led.output_level = XMC_GPIO_OUTPUT_LEVEL_LOW;
+	XMC_GPIO_Init(BOOTLOADER_STATUS_LED_PIN, &led);
 }
 
 BootloaderStatus bootloader_status;
@@ -77,6 +77,9 @@ int main(void) {
 		XMC_GPIO_SetOutputLow(BOOTLOADER_STATUS_LED_PIN);
 		boot_jump_to_firmware();
 	}
+
+	// By default we turn status LED off in bootloader mode
+	XMC_GPIO_SetOutputHigh(BOOTLOADER_STATUS_LED_PIN);
 
 	bootloader_status.boot_mode = BOOT_MODE_BOOTLOADER;
 	bootloader_status.status_led_config = 0;
