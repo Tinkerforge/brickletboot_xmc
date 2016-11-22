@@ -183,9 +183,14 @@ uint32_t tfp_common_get_uid(void) {
 	// TODO: FIXME
 
 	// For normal Bricks the last bit is always 1
-	// For RED Bricks the last two bits are always 10
-	// For co processor Bricklets the last three bits are always 100
-	return 12345; //
+	// For RED Bricks the last two bits are always 01
+	// For co processor Bricklets the last three bits are always 001
+
+	uint32_t uid = 12345;
+	uid |= (1 << 29);
+	uid &= ~((1 << 30) | (1 << 31));
+
+	return uid;
 }
 
 BootloaderHandleMessageResponse tfp_common_set_bootloader_mode(const TFPCommonSetBootloaderMode *data, TFPCommonSetBootloaderModeResponse *response, BootloaderStatus *bs) {
