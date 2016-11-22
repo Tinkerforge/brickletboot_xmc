@@ -73,6 +73,7 @@ Optinal Improvement:
 #include "xmc_gpio.h"
 
 #include "bricklib2/utility/pearson_hash.h"
+#include "bricklib2/utility/led_flicker.h"
 #include "bricklib2/logging/logging.h"
 
 #define SPITFP_MIN_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MIN_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
@@ -267,6 +268,7 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 
 	// Is this necessary here? We already handle this in case of NVMCTRL
 	tfp_common_handle_reset(bootloader_status);
+	led_flicker_tick(&bootloader_status->led_flicker_state, bootloader_status->system_timer_tick, BOOTLOADER_STATUS_LED_PIN);
 
 	spitfp_check_message_send_timeout(bootloader_status);
 

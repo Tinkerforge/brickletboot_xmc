@@ -56,15 +56,19 @@ For Bricklets with co-processor we use the following flash memory map
 
 const uint32_t device_identifier __attribute__ ((section(".device_identifier"))) = BOOTLOADER_DEVICE_IDENTIFIER;
 const uint32_t bootloader_version __attribute__ ((section(".bootloader_version"))) = (BOOTLOADER_VERSION_MAJOR << 16) | (BOOTLOADER_VERSION_MINOR << 8) | (BOOTLOADER_VERSION_REVISION << 0);
+BootloaderStatus bootloader_status;
 
 void main_led_init(void) {
 	XMC_GPIO_CONFIG_t led;
 	led.mode = XMC_GPIO_MODE_OUTPUT_PUSH_PULL;
 	led.output_level = XMC_GPIO_OUTPUT_LEVEL_LOW;
 	XMC_GPIO_Init(BOOTLOADER_STATUS_LED_PIN, &led);
+
+	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_ACTIVE;
+	bootloader_status.led_flicker_state.counter = 0;
+	bootloader_status.led_flicker_state.start   = 0;
 }
 
-BootloaderStatus bootloader_status;
 int main(void) {
 	// Enable LED and temperature measurement for
 	// bootloader as well as firmware
@@ -80,9 +84,10 @@ int main(void) {
 
 	// By default we turn status LED off in bootloader mode
 	XMC_GPIO_SetOutputHigh(BOOTLOADER_STATUS_LED_PIN);
+	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_OFF;
 
 	bootloader_status.boot_mode = BOOT_MODE_BOOTLOADER;
-	bootloader_status.status_led_config = 0;
+	bootloader_status.led_flicker_state.config = 0;
 	bootloader_status.system_timer_tick = 0;
 	bootloader_status.reboot_started_at = 0;
 

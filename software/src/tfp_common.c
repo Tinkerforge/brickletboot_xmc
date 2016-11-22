@@ -271,10 +271,10 @@ BootloaderHandleMessageResponse tfp_common_set_status_led_config(const TFPCommon
 		return HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER;
 	}
 
-	bs->status_led_config = data->config;
+	bs->led_flicker_state.config = data->config;
 
 	// Set LED according to value
-	if(bs->status_led_config == TFP_COMMON_STATUS_LED_OFF) {
+	if(bs->led_flicker_state.config == TFP_COMMON_STATUS_LED_OFF) {
 		XMC_GPIO_SetOutputHigh(BOOTLOADER_STATUS_LED_PIN);
 	} else {
 		XMC_GPIO_SetOutputLow(BOOTLOADER_STATUS_LED_PIN);
@@ -286,7 +286,7 @@ BootloaderHandleMessageResponse tfp_common_set_status_led_config(const TFPCommon
 BootloaderHandleMessageResponse tfp_common_get_status_led_config(const TFPCommonGetStatusLEDConfig *data, TFPCommonGetStatusLEDConfigResponse *response, BootloaderStatus *bs) {
 	response->header.length = sizeof(TFPCommonGetStatusLEDConfigResponse);
 
-	response->config = bs->status_led_config;
+	response->config = bs->led_flicker_state.config;
 
 	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
@@ -414,6 +414,9 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	}
 #endif
 
+	// Increase counter for incoming message
+	bs->led_flicker_state.counter++;
+
 	// Copy header in response, this has to be done for most of the functions anyway
 	uint8_t buffer[TFP_COMMON_RESPONSE_MESSAGE_LENGTH];
 	void *response = buffer;
@@ -466,6 +469,8 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	}
 
 	if(has_message) {
+		// Increase counter for outgoing message
+		bs->led_flicker_state.counter++;
 		spitfp_send_ack_and_message(bs, response, tfp_get_length_from_message(response));
 	} else {
 		spitfp_send_ack(bs);
