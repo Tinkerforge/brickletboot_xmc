@@ -22,6 +22,7 @@
 #include "bricklib2/bootloader/bootloader.h"
 
 #include "bootloader_spitfp.h"
+#include "tfp_common.h"
 
 #ifdef BOOTLOADER_FUNCTION_AEABI_IDIV
 int __aeabi_idiv(int a, int b);
@@ -50,6 +51,10 @@ void firmware_entry_handle(BootloaderFunctions *bf, BootloaderStatus *bs) {
 
 #ifdef BOOTLOADER_FUNCTION_SPITFP_IS_SEND_POSSIBLE
 	bf->spitfp_is_send_possible = spitfp_is_send_possible;
+#endif
+
+#ifdef BOOTLOADER_FUNCTION_GET_UID
+	bf->get_uid = tfp_common_get_uid;
 #endif
 
 #ifdef BOOTLOADER_FUNCTION_DSU_CRC32_CAL
