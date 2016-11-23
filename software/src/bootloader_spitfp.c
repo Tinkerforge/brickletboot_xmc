@@ -196,6 +196,9 @@ uint8_t spitfp_get_sequence_byte(SPITFP *st, const bool increase) {
 }
 
 void spitfp_send_ack_and_message(BootloaderStatus *bs, uint8_t *data, const uint8_t length) {
+	// Increase counter for outgoing message
+	bs->led_flicker_state.counter++;
+
 	SPITFP *st = &bs->st;
 	uint8_t checksum = 0;
 	st->buffer_send_length = length + SPITFP_PROTOCOL_OVERHEAD;

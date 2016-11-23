@@ -469,8 +469,6 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	}
 
 	if(has_message) {
-		// Increase counter for outgoing message
-		bs->led_flicker_state.counter++;
 		spitfp_send_ack_and_message(bs, response, tfp_get_length_from_message(response));
 	} else {
 		spitfp_send_ack(bs);
