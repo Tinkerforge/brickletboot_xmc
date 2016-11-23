@@ -267,7 +267,7 @@ BootloaderHandleMessageResponse tfp_common_write_firmware(const TFPCommonWriteFi
 }
 
 BootloaderHandleMessageResponse tfp_common_set_status_led_config(const TFPCommonSetStatusLEDConfig *data, BootloaderStatus *bs) {
-	if(data->config >= TFP_COMMON_STATUS_LED_SHOW_COMMUNICATION_STATUS) {
+	if(data->config > TFP_COMMON_STATUS_LED_SHOW_COMMUNICATION_STATUS) {
 		return HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER;
 	}
 
