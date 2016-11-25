@@ -313,6 +313,10 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 				}
 
 				data_length = data;
+				if((start+used - i) < data_length) {
+					// There can't be enough data for a whole message, we can return here.
+					return;
+				}
 				PEARSON(checksum, data_length);
 
 				break;
