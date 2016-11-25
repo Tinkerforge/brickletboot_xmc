@@ -242,7 +242,6 @@ bool spitfp_is_send_possible(SPITFP *st) {
 	return st->buffer_send_length == 0;
 }
 
-
 void spitfp_check_message_send_timeout(BootloaderStatus *bs) {
 	// If there is still data in the buffer (we did not receive an ack) and
 	// we are currently not sending data and was longer then SPITFP_TIMEOUT ms
@@ -263,7 +262,6 @@ void spitfp_handle_protocol_error(SPITFP *st) {
 	// In case of error we completely empty the ringbuffer
 	uint8_t data;
 	while(ringbuffer_get(&st->ringbuffer_recv, &data));
-	st->state = SPITFP_STATE_START;
 }
 
 void spitfp_tick(BootloaderStatus *bootloader_status) {
@@ -284,23 +282,24 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 	uint8_t data_sequence_number = 0;
 	uint8_t data_length = 0;
 
+	SPITFPState state = SPITFP_STATE_START;
 	uint16_t used = ringbuffer_get_used(&st->ringbuffer_recv);
-
 	uint16_t start = st->ringbuffer_recv.start;
+
 	for(uint16_t i = start; i < start+used; i++) {
 		const uint16_t index = i % SPITFP_RECEIVE_BUFFER_SIZE;
 		const uint8_t data = st->buffer_recv[index];
 		num_to_remove_from_ringbuffer++;
 
-		switch(st->state) {
+		switch(state) {
 			case SPITFP_STATE_START: {
 				checksum = 0;
 				message_position = 0;
 
 				if(data == SPITFP_PROTOCOL_OVERHEAD) {
-					st->state = SPITFP_STATE_ACK_SEQUENCE_NUMBER;
+					state = SPITFP_STATE_ACK_SEQUENCE_NUMBER;
 				} else if(data >= SPITFP_MIN_TFP_MESSAGE_LENGTH && data <= SPITFP_MAX_TFP_MESSAGE_LENGTH) {
-					st->state = SPITFP_STATE_MESSAGE_SEQUENCE_NUMBER;
+					state = SPITFP_STATE_MESSAGE_SEQUENCE_NUMBER;
 				} else if(data == 0) {
 					ringbuffer_remove(&st->ringbuffer_recv, 1);
 					num_to_remove_from_ringbuffer--;
@@ -325,14 +324,14 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 			case SPITFP_STATE_ACK_SEQUENCE_NUMBER: {
 				data_sequence_number = data;
 				PEARSON(checksum, data_sequence_number);
-				st->state = SPITFP_STATE_ACK_CHECKSUM;
+				state = SPITFP_STATE_ACK_CHECKSUM;
 				break;
 			}
 
 			case SPITFP_STATE_ACK_CHECKSUM: {
 				// Whatever happens here, we will go to start again and remove
 				// data from ringbuffer
-				st->state = SPITFP_STATE_START;
+				state = SPITFP_STATE_START;
 				ringbuffer_remove(&st->ringbuffer_recv, num_to_remove_from_ringbuffer);
 				num_to_remove_from_ringbuffer = 0;
 
@@ -357,7 +356,7 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 			case SPITFP_STATE_MESSAGE_SEQUENCE_NUMBER: {
 				data_sequence_number = data;
 				PEARSON(checksum, data_sequence_number);
-				st->state = SPITFP_STATE_MESSAGE_DATA;
+				state = SPITFP_STATE_MESSAGE_DATA;
 				break;
 			}
 
@@ -368,14 +367,14 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 				PEARSON(checksum, data);
 
 				if(message_position == data_length - SPITFP_PROTOCOL_OVERHEAD) {
-					st->state = SPITFP_STATE_MESSAGE_CHECKSUM;
+					state = SPITFP_STATE_MESSAGE_CHECKSUM;
 				}
 				break;
 			}
 
 			case SPITFP_STATE_MESSAGE_CHECKSUM: {
 				// Whatever happens here, we will go to start again
-				st->state = SPITFP_STATE_START;
+				state = SPITFP_STATE_START;
 
 				// Remove data from ringbuffer. If we can't send it we can't handle
 				// it at the moment we will wait for the SPI master to re-send it.
@@ -417,6 +416,4 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 			}
 		}
 	}
-
-	st->state = SPITFP_STATE_START;
 }
