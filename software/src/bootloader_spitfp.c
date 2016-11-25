@@ -377,6 +377,11 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 				// Whatever happens here, we will go to start again
 				st->state = SPITFP_STATE_START;
 
+				// Remove data from ringbuffer. If we can't send it we can't handle
+				// it at the moment we will wait for the SPI master to re-send it.
+				ringbuffer_remove(&st->ringbuffer_recv, num_to_remove_from_ringbuffer);
+				num_to_remove_from_ringbuffer = 0;
+
 				if(checksum != data) {
 					spitfp_handle_protocol_error(st);
 					return;
@@ -393,11 +398,6 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 				}
 
 				if(spitfp_is_send_possible(st)) {
-					// If we can currently send a message, we can now definitely remove
-					// the data from ring buffer.
-					ringbuffer_remove(&st->ringbuffer_recv, num_to_remove_from_ringbuffer);
-					num_to_remove_from_ringbuffer = 0;
-
 					// If sequence number is new, we can handle the message.
 					// Otherwise we only ACK the already handled message again.
 					const uint8_t message_sequence_number = data_sequence_number & 0x0F;
