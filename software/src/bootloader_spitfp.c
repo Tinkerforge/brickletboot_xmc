@@ -413,7 +413,7 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 					}
 				}
 
-				break;
+				return;
 			}
 		}
 	}
