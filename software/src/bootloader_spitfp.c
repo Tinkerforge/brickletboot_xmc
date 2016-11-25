@@ -343,7 +343,12 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 
 				uint8_t last_sequence_number_seen_by_master = (data_sequence_number & 0xF0) >> 4;
 				if(last_sequence_number_seen_by_master == st->current_sequence_number) {
-					st->buffer_send_length = 0;
+					// If we got a timeout and are now re-sending the message, it
+					// is possible that we are currently sending this message again.
+					// Check if it was send completely
+					if(st->buffer_send_index == st->buffer_send_length) {
+						st->buffer_send_length = 0;
+					}
 				}
 
 				break;
