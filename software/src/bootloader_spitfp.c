@@ -253,6 +253,7 @@ void spitfp_check_message_send_timeout(BootloaderStatus *bs) {
 
 		// We leave the old message the same and try again
 		bs->st.buffer_send_index = 0;
+		bs->st.last_send_started = bs->system_timer_tick;
 		XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
 		XMC_USIC_CH_TriggerServiceRequest(SPITFP_USIC, SPITFP_SERVICE_REQUEST_TX);
 	}
