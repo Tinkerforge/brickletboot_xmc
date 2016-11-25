@@ -392,8 +392,6 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 					}
 				}
 
-				const uint8_t message_sequence_number = data_sequence_number & 0x0F;
-
 				if(spitfp_is_send_possible(st)) {
 					// If we can currently send a message, we can now definitely remove
 					// the data from ring buffer.
@@ -402,6 +400,7 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 
 					// If sequence number is new, we can handle the message.
 					// Otherwise we only ACK the already handled message again.
+					const uint8_t message_sequence_number = data_sequence_number & 0x0F;
 					if(message_sequence_number != st->last_sequence_number_seen) {
 						st->last_sequence_number_seen = message_sequence_number;
 						// The handle message function will send an ACK for the message
