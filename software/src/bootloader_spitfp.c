@@ -79,7 +79,7 @@ Optional Improvement:
 #define SPITFP_MIN_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MIN_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
 #define SPITFP_MAX_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
 
-#define SPITFP_TIMEOUT 50 // in ms
+#define SPITFP_TIMEOUT 20 // in ms
 
 void spitfp_init(SPITFP *st) {
 	st->last_sequence_number_seen = 0;
