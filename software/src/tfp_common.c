@@ -32,6 +32,7 @@
 
 #include "bricklib2/protocols/tfp/tfp.h"
 
+#define TFP_COMMON_FID_GET_SPITFP_ERROR_COUNT 234
 #define TFP_COMMON_FID_SET_BOOTLOADER_MODE 235
 #define TFP_COMMON_FID_GET_BOOTLOADER_MODE 236
 #define TFP_COMMON_FID_SET_WRITE_FIRMWARE_POINTER 237
@@ -48,9 +49,9 @@
 #define TFP_COMMON_FID_ENUMERATE 254
 #define TFP_COMMON_FID_GET_IDENTITY 255
 
-#define TFP_COMMON_ENUMERATE_CALLBACK_UID_LENGTH 8
+#define TFP_COMMON_ENUMERATE_CALLBACK_UID_LENGTH     8
 #define TFP_COMMON_ENUMERATE_CALLBACK_VERSION_LENGTH 3
-#define TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE 64 // = page size of samd* processors
+#define TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE       64 // = page size of samd* processors
 
 #define TFP_COMMON_ENUMERATE_TYPE_AVAILABLE 0
 #define TFP_COMMON_ENUMERATE_TYPE_ADDED     1
@@ -63,12 +64,24 @@
 #define TFP_COMMON_WRITE_FIRMWARE_STATUS_OK              0
 #define TFP_COMMON_WRITE_FIRMWARE_STATUS_INVALID_POINTER 1
 
-#define TFP_COMMON_XMC1_BLOCK_SIZE 16
-#define TFP_COMMON_XMC1_PAGE_SIZE 256
+#define TFP_COMMON_XMC1_BLOCK_SIZE  16
+#define TFP_COMMON_XMC1_PAGE_SIZE   256
 #define TFP_COMMON_XMC1_SECTOR_SIZE 4096
-#define TFP_COMMON_XMC1_PAGE_MASK ((BOOTLOADER_FIRMWARE_SIZE-1) & ~(TFP_COMMON_XMC1_PAGE_SIZE-1))
+#define TFP_COMMON_XMC1_PAGE_MASK   ((BOOTLOADER_FIRMWARE_SIZE-1) & ~(TFP_COMMON_XMC1_PAGE_SIZE-1))
 
 #define TFP_COMMON_WAIT_BEFORE_RESET 250 // in ms
+
+typedef struct {
+	TFPMessageHeader header;
+} __attribute__((__packed__)) TFPCommonGetSPITFPErrorCount;
+
+typedef struct {
+	TFPMessageHeader header;
+	uint32_t error_count_ack_checksum;
+	uint32_t error_count_message_checksum;
+	uint32_t error_count_frame;
+	uint32_t error_count_overflow;;
+} __attribute__((__packed__)) TFPCommonGetSPITFPErrorCountResponse;
 
 typedef struct {
 	TFPMessageHeader header;
@@ -191,6 +204,17 @@ uint32_t tfp_common_get_uid(void) {
 	uid &= ~((1 << 30) | (1 << 31));
 
 	return uid;
+}
+
+BootloaderHandleMessageResponse tfp_common_get_spitfp_error_count(const TFPCommonGetSPITFPErrorCount *data, TFPCommonGetSPITFPErrorCountResponse *response, BootloaderStatus *bs) {
+	response->header.length = sizeof(TFPCommonGetSPITFPErrorCountResponse);
+
+	response->error_count_ack_checksum     = bs->error_count.error_count_ack_checksum;
+	response->error_count_message_checksum = bs->error_count.error_count_message_checksum;
+	response->error_count_frame            = bs->error_count.error_count_frame;;
+	response->error_count_overflow         = bs->error_count.error_count_overflow;
+
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
 }
 
 BootloaderHandleMessageResponse tfp_common_set_bootloader_mode(const TFPCommonSetBootloaderMode *data, TFPCommonSetBootloaderModeResponse *response, BootloaderStatus *bs) {
@@ -425,17 +449,18 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	BootloaderHandleMessageResponse handle_message_return = HANDLE_MESSAGE_RESPONSE_EMPTY;
 
 	switch(tfp_get_fid_from_message(message)) {
-		case TFP_COMMON_FID_SET_BOOTLOADER_MODE:        handle_message_return = tfp_common_set_bootloader_mode(message, response, bs);   break;
-		case TFP_COMMON_FID_GET_BOOTLOADER_MODE:        handle_message_return = tfp_common_get_bootloader_mode(message, response, bs);   break;
-		case TFP_COMMON_FID_SET_WRITE_FIRMWARE_POINTER: handle_message_return = tfp_common_set_write_firmware_pointer(message, bs);      break;
-		case TFP_COMMON_FID_WRITE_FIRMWARE:             handle_message_return = tfp_common_write_firmware(message, response, bs);        break;
-		case TFP_COMMON_FID_SET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_set_status_led_config(message, bs);           break;
-		case TFP_COMMON_FID_GET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_get_status_led_config(message, response, bs); break;
-		case TFP_COMMON_FID_GET_CHIP_TEMPERATURE:       handle_message_return = tfp_common_get_chip_temperature(message, response);      break;
-		case TFP_COMMON_FID_RESET:                      handle_message_return = tfp_common_reset(message,  bs);                          break;
-		case TFP_COMMON_FID_CO_MCU_ENUMERATE:           handle_message_return = tfp_common_co_mcu_enumerate(message, response);          break;
-		case TFP_COMMON_FID_ENUMERATE:                  handle_message_return = tfp_common_enumerate(message, response);                 break;
-		case TFP_COMMON_FID_GET_IDENTITY:               handle_message_return = tfp_common_get_identity(message, response);              break;
+		case TFP_COMMON_FID_GET_SPITFP_ERROR_COUNT:     handle_message_return = tfp_common_get_spitfp_error_count(message, response, bs); break;
+		case TFP_COMMON_FID_SET_BOOTLOADER_MODE:        handle_message_return = tfp_common_set_bootloader_mode(message, response, bs);    break;
+		case TFP_COMMON_FID_GET_BOOTLOADER_MODE:        handle_message_return = tfp_common_get_bootloader_mode(message, response, bs);    break;
+		case TFP_COMMON_FID_SET_WRITE_FIRMWARE_POINTER: handle_message_return = tfp_common_set_write_firmware_pointer(message, bs);       break;
+		case TFP_COMMON_FID_WRITE_FIRMWARE:             handle_message_return = tfp_common_write_firmware(message, response, bs);         break;
+		case TFP_COMMON_FID_SET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_set_status_led_config(message, bs);            break;
+		case TFP_COMMON_FID_GET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_get_status_led_config(message, response, bs);  break;
+		case TFP_COMMON_FID_GET_CHIP_TEMPERATURE:       handle_message_return = tfp_common_get_chip_temperature(message, response);       break;
+		case TFP_COMMON_FID_RESET:                      handle_message_return = tfp_common_reset(message,  bs);                           break;
+		case TFP_COMMON_FID_CO_MCU_ENUMERATE:           handle_message_return = tfp_common_co_mcu_enumerate(message, response);           break;
+		case TFP_COMMON_FID_ENUMERATE:                  handle_message_return = tfp_common_enumerate(message, response);                  break;
+		case TFP_COMMON_FID_GET_IDENTITY:               handle_message_return = tfp_common_get_identity(message, response);               break;
 		default: {
 			if(bs->boot_mode == BOOT_MODE_FIRMWARE) {
 				handle_message_return = bs->firmware_handle_message_func(message, response);

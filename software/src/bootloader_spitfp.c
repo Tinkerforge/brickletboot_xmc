@@ -307,6 +307,7 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 				} else {
 					// If the length is not PROTOCOL_OVERHEAD or within [MIN_TFP_MESSAGE_LENGTH, MAX_TFP_MESSAGE_LENGTH]
 					// or 0, something has gone wrong!
+					bootloader_status->error_count.error_count_frame++;
 					spitfp_handle_protocol_error(st);
 					return;
 				}
@@ -336,6 +337,7 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 				num_to_remove_from_ringbuffer = 0;
 
 				if(checksum != data) {
+					bootloader_status->error_count.error_count_ack_checksum++;
 					spitfp_handle_protocol_error(st);
 					return;
 				}
@@ -382,6 +384,7 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 				num_to_remove_from_ringbuffer = 0;
 
 				if(checksum != data) {
+					bootloader_status->error_count.error_count_message_checksum++;
 					spitfp_handle_protocol_error(st);
 					return;
 				}

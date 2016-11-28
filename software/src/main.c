@@ -54,19 +54,17 @@ For Bricklets with co-processor we use the following flash memory map
 #define TICK_COUNT_FOR_1MS 36 // 36 ticks @48mhz = 1ms
 #endif
 
-const uint32_t device_identifier __attribute__ ((section(".device_identifier"))) = BOOTLOADER_DEVICE_IDENTIFIER;
+const uint32_t device_identifier  __attribute__ ((section(".device_identifier")))  = BOOTLOADER_DEVICE_IDENTIFIER;
 const uint32_t bootloader_version __attribute__ ((section(".bootloader_version"))) = (BOOTLOADER_VERSION_MAJOR << 16) | (BOOTLOADER_VERSION_MINOR << 8) | (BOOTLOADER_VERSION_REVISION << 0);
 BootloaderStatus bootloader_status;
 
 void main_led_init(void) {
+	// Turn LED on (default for firmware is config = STATUS)
+	// LED will be turned off again if we can't jump to firmware and stay in bootloader
 	XMC_GPIO_CONFIG_t led;
 	led.mode = XMC_GPIO_MODE_OUTPUT_PUSH_PULL;
 	led.output_level = XMC_GPIO_OUTPUT_LEVEL_LOW;
 	XMC_GPIO_Init(BOOTLOADER_STATUS_LED_PIN, &led);
-
-	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_ACTIVE;
-	bootloader_status.led_flicker_state.counter = 0;
-	bootloader_status.led_flicker_state.start   = 0;
 }
 
 int main(void) {
@@ -84,12 +82,19 @@ int main(void) {
 
 	// By default we turn status LED off in bootloader mode
 	XMC_GPIO_SetOutputHigh(BOOTLOADER_STATUS_LED_PIN);
-	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_OFF;
 
-	bootloader_status.boot_mode = BOOT_MODE_BOOTLOADER;
-	bootloader_status.led_flicker_state.config = 0;
+	bootloader_status.boot_mode         = BOOT_MODE_BOOTLOADER;
 	bootloader_status.system_timer_tick = 0;
 	bootloader_status.reboot_started_at = 0;
+
+	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_OFF;
+	bootloader_status.led_flicker_state.counter = 0;
+	bootloader_status.led_flicker_state.start   = 0;
+
+	bootloader_status.error_count.error_count_ack_checksum     = 0;
+	bootloader_status.error_count.error_count_message_checksum = 0;
+	bootloader_status.error_count.error_count_frame            = 0;
+	bootloader_status.error_count.error_count_overflow         = 0;
 
 	spitfp_init(&bootloader_status.st);
 
