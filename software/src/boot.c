@@ -95,12 +95,6 @@ void boot_jump_to_firmware(void) {
 	// Vector table's first entry is the stack pointer value
 	__set_MSP((*(uint32_t *)stack_pointer_address));
 
-	//set the NVIC's VTOR to the beginning of main app
-	// TODO: There is no Vector Offset Table Register (VTOR) in XMC1
-	//       Is it OK if we just jump to the new firmware and it does
-	//       the Veneer stuff?
-//	SCB->VTOR = stack_pointer_address & SCB_VTOR_TBLOFF_Msk;
-
 	// Set the program counter to the application start address
 	// Vector table's second entry is the system reset value
 	firmware_start_func = *((boot_firmware_start_func_t *)reset_pointer_address);
