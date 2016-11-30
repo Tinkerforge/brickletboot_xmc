@@ -122,7 +122,7 @@ int main(void) {
 	bootloader_status.system_timer_tick = 0;
 	bootloader_status.reboot_started_at = 0;
 
-	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_OFF;
+	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_ACTIVE;
 	bootloader_status.led_flicker_state.counter = 0;
 	bootloader_status.led_flicker_state.start   = 0;
 
