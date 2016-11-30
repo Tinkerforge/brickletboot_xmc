@@ -278,9 +278,12 @@ BootloaderHandleMessageResponse tfp_common_write_firmware(const TFPCommonWriteFi
 
 	// If this is the last chunk of one page, we write it to flash
 	if(chunk_num == ((TFP_COMMON_XMC1_PAGE_SIZE/TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE) - 1)) {
+		uint32_t *page_address = (uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + (tfp_common_firmware_pointer & TFP_COMMON_XMC1_PAGE_MASK));
 		__disable_irq();
-		XMC_FLASH_ErasePage((uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + (tfp_common_firmware_pointer & TFP_COMMON_XMC1_PAGE_MASK)));
-		XMC_FLASH_ProgramVerifyPage((uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + (tfp_common_firmware_pointer & TFP_COMMON_XMC1_PAGE_MASK)), (uint32_t*)tfp_common_firmware_page);
+		XMC_FLASH_ErasePage(page_address);
+		while(XMC_FLASH_IsBusy());
+		XMC_FLASH_ProgramVerifyPage(page_address, (uint32_t*)tfp_common_firmware_page);
+		while(XMC_FLASH_IsBusy());
 		__enable_irq();
 	}
 
@@ -407,7 +410,7 @@ void tfp_common_handle_reset(BootloaderStatus *bs) {
 				__disable_irq();
 
 				XMC_FLASH_ErasePage((uint32_t*)BOOTLOADER_FIRMWARE_START_POS);
-				for(uint32_t i = 0; i < TFP_FLASH_ERASE_WAIT_CYCLES; i++) {	__NOP(); }
+				while(XMC_FLASH_IsBusy());
 
 				NVIC_SystemReset();
 			}
