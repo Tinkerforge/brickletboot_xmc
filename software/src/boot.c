@@ -61,7 +61,6 @@ static uint32_t crc32(uint32_t crc, uint8_t *buffer, uint32_t length) {
     return ~crc;
 }
 
-
 uint32_t boot_calculate_firmware_crc(void) {
 	const uint32_t crc = crc32(0, (uint8_t*)BOOTLOADER_FIRMWARE_START_POS, BOOTLOADER_FIRMWARE_SIZE - BOOTLOADER_FIRMWARE_CRC_SIZE);
 	return crc;
