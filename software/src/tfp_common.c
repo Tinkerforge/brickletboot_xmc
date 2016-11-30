@@ -193,13 +193,12 @@ static uint32_t tfp_common_firmware_pointer = 0;
 static uint8_t tfp_common_firmware_page[TFP_COMMON_XMC1_PAGE_SIZE];
 
 uint32_t tfp_common_get_uid(void) {
-	// TODO: FIXME
-
 	// For normal Bricks the last bit is always 1
 	// For RED Bricks the last two bits are always 01
 	// For co processor Bricklets the last three bits are always 001
+	uint32_t *unique_chip_id = (uint32_t*)0x10000FF0;
 
-	uint32_t uid = 12345;
+	uint32_t uid = unique_chip_id[0] ^ unique_chip_id[1] ^ unique_chip_id[2] ^ unique_chip_id[3];
 	uid |= (1 << 29);
 	uid &= ~((1 << 30) | (1 << 31));
 
