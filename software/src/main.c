@@ -82,8 +82,23 @@ void main_wdt_init(void) {
 	XMC_WDT_Start();
 }
 
+#ifdef BOOTLOADER_ENABLE_BOOT_PAD
+void main_boot_pad_init(void) {
+	// Put boot pin in input pull-up mode, if the uses wants to force
+	// bootloader mode, he can jumper it to ground
+	XMC_GPIO_CONFIG_t boot_pad;
+	boot_pad.mode = XMC_GPIO_MODE_INPUT_PULL_UP;
+	boot_pad.output_level = XMC_GPIO_OUTPUT_LEVEL_HIGH;
+	boot_pad.input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_LARGE;
+	XMC_GPIO_Init(BOOTLOADER_BOOT_PAD_PIN, &boot_pad);
+}
+#endif
+
 int main(void) {
-	// Enable LED and temperature measurement for
+#ifdef BOOTLOADER_ENABLE_BOOT_PAD
+	main_boot_pad_init();
+#endif
+
 	// Enable watchdog, status LED and temperature measurement for
 	// bootloader as well as firmware
 	main_wdt_init();
@@ -92,8 +107,11 @@ int main(void) {
 
 	// Jump to firmware if we can
 	const uint8_t can_jump_to_firmware = boot_can_jump_to_firmware();
-	if(can_jump_to_firmware == TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_OK) {
-		XMC_GPIO_SetOutputLow(BOOTLOADER_STATUS_LED_PIN);
+	if(
+#ifdef BOOTLOADER_ENABLE_BOOT_PAD
+	   XMC_GPIO_GetInput(BOOTLOADER_BOOT_PAD_PIN) &&
+#endif
+	   (can_jump_to_firmware == TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_OK)) {
 		boot_jump_to_firmware();
 	}
 
