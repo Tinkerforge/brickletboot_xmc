@@ -47,7 +47,7 @@ SET(SOURCES
 	"${PROJECT_SOURCE_DIR}/src/tfp_common.c"
 	"${PROJECT_SOURCE_DIR}/src/firmware_entry.c"
 	
-	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/uartbb/uartbb.c"
+#	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/uartbb/uartbb.c"
 #	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/system_timer/system_timer.c"
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/startup/startup_xmc1.c"
 	
