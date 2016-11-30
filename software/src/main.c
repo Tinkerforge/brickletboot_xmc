@@ -40,6 +40,7 @@ For Bricklets with co-processor we use the following flash memory map
 
 #include "xmc_gpio.h"
 #include "xmc_scu.h"
+#include "xmc_wdt.h"
 #include "configs/config.h"
 
 #include "bootloader_spitfp.h"
@@ -67,9 +68,25 @@ void main_led_init(void) {
 	XMC_GPIO_Init(BOOTLOADER_STATUS_LED_PIN, &led);
 }
 
+void main_wdt_init(void) {
+	XMC_WDT_CONFIG_t wdt_config = {
+		.window_lower_bound = 0,
+		.window_upper_bound = 32768, // 1s = 32768
+		.prewarn_mode = false,
+		.run_in_debug_mode = false,
+		.service_pulse_width = 255
+	};
+
+	XMC_WDT_Enable();
+	XMC_WDT_Init(&wdt_config);
+	XMC_WDT_Start();
+}
+
 int main(void) {
 	// Enable LED and temperature measurement for
+	// Enable watchdog, status LED and temperature measurement for
 	// bootloader as well as firmware
+	main_wdt_init();
 	main_led_init();
 	XMC_SCU_StartTempMeasurement();
 

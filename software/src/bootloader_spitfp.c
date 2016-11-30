@@ -71,6 +71,7 @@ Optional Improvement:
 #include "tfp_common.h"
 #include "xmc_spi.h"
 #include "xmc_gpio.h"
+#include "xmc_wdt.h"
 
 #include "bricklib2/utility/pearson_hash.h"
 #include "bricklib2/utility/led_flicker.h"
@@ -265,8 +266,8 @@ void spitfp_handle_protocol_error(SPITFP *st) {
 }
 
 void spitfp_tick(BootloaderStatus *bootloader_status) {
+	XMC_WDT_Service();
 	SPITFP *st = &bootloader_status->st;
-//	tinywdt_reset(); // TODO: FIXME
 
 	// Is this necessary here? We already handle this in case of NVMCTRL
 	tfp_common_handle_reset(bootloader_status);
