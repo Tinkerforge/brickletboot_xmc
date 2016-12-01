@@ -274,7 +274,11 @@ void spitfp_handle_hotplug(BootloaderStatus *bootloader_status) {
 		// We got the first data, start timer!
 		bootloader_status->hotplug_time = bootloader_status->system_timer_tick;
 	} else if((bootloader_status->system_timer_tick - bootloader_status->hotplug_time) >= SPITFP_HOTPLUG_TIMEOUT) {
-		// TODO: Disable interrupts
+		// Disable RX interrupts so we can't accidentally
+		// receive data in between the ringbuffer_adds
+		NVIC_DisableIRQ((IRQn_Type)SPITFP_IRQ_RX);
+		__DSB();
+		__ISB();
 
 		// Lets fake a co mcu enumerate message
 		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x0B);
@@ -288,9 +292,11 @@ void spitfp_handle_hotplug(BootloaderStatus *bootloader_status) {
 		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x00);
 		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x00);
 		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0xCC);
-		bootloader_status->hotplug_time = UINT32_MAX;
 
-		// TODO: Enable interrupts
+		// Enable interrupt again
+		NVIC_EnableIRQ((IRQn_Type)SPITFP_IRQ_RX);
+
+		bootloader_status->hotplug_time = UINT32_MAX;
 	}
 }
 
