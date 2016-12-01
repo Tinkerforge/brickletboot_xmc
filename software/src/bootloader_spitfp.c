@@ -52,7 +52,7 @@ Protocol information:
 * Send timeout is 20ms (re-send if no ACK is received after 20ms)
 * Increase sequence number if ACK was received
 * SPI MISO/MOSI data is just written to ringbuffer (if possible directly through dma)
-* Sequence number runs from 0x1 to 0xF (0 is for ACK Packet only)
+* Sequence number runs from 0x2 to 0xF (0 is for ACK Packet only, 1 is for the very first request)
 * Compared to the SPI stack protocol, this protocol is made for slow SPI clock speeds
 
 Optional Improvement:
@@ -189,7 +189,7 @@ uint8_t spitfp_get_sequence_byte(SPITFP *st, const bool increase) {
 	if(increase) {
 		st->current_sequence_number++;
 		if(st->current_sequence_number > 0xF) {
-			st->current_sequence_number = 1;
+			st->current_sequence_number = 2;
 		}
 	}
 
