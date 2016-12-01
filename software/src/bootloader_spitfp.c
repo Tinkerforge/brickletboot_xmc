@@ -81,7 +81,7 @@ Optional Improvement:
 #define SPITFP_MAX_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
 
 #define SPITFP_TIMEOUT 20 // in ms
-#define SPITFP_HOTPLUG_TIMEOUT 2000 // Send enumerate after 2000ms if there was no request for it
+#define SPITFP_HOTPLUG_TIMEOUT 1000 // Send enumerate after 2000ms if there was no request for it
 
 void spitfp_init(SPITFP *st) {
 	st->last_sequence_number_seen = 0;
