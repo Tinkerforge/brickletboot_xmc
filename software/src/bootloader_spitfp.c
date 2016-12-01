@@ -199,7 +199,7 @@ uint8_t spitfp_get_sequence_byte(SPITFP *st, const bool increase) {
 
 void spitfp_send_ack_and_message(BootloaderStatus *bs, uint8_t *data, const uint8_t length) {
 	// Increase counter for outgoing message
-	bs->led_flicker_state.counter++;
+	led_flicker_increase_counter(&bs->led_flicker_state);
 
 	SPITFP *st = &bs->st;
 	uint8_t checksum = 0;

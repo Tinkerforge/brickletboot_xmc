@@ -57,9 +57,10 @@
 #define TFP_COMMON_ENUMERATE_TYPE_ADDED     1
 #define TFP_COMMON_ENUMERATE_TYPE_REMOVED   2
 
-#define TFP_COMMON_STATUS_LED_OFF                       0
-#define TFP_COMMON_STATUS_LED_ON                        1
-#define TFP_COMMON_STATUS_LED_SHOW_COMMUNICATION_STATUS 2
+#define TFP_COMMON_STATUS_LED_OFF            0
+#define TFP_COMMON_STATUS_LED_ON             1
+#define TFP_COMMON_STATUS_LED_SHOW_STATUS    2
+#define TFP_COMMON_STATUS_LED_SHOW_HEARTBEAT 3
 
 #define TFP_COMMON_WRITE_FIRMWARE_STATUS_OK              0
 #define TFP_COMMON_WRITE_FIRMWARE_STATUS_INVALID_POINTER 1
@@ -293,7 +294,7 @@ BootloaderHandleMessageResponse tfp_common_write_firmware(const TFPCommonWriteFi
 }
 
 BootloaderHandleMessageResponse tfp_common_set_status_led_config(const TFPCommonSetStatusLEDConfig *data, BootloaderStatus *bs) {
-	if(data->config > TFP_COMMON_STATUS_LED_SHOW_COMMUNICATION_STATUS) {
+	if(data->config > TFP_COMMON_STATUS_LED_SHOW_HEARTBEAT) {
 		return HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER;
 	}
 
@@ -303,6 +304,7 @@ BootloaderHandleMessageResponse tfp_common_set_status_led_config(const TFPCommon
 	if(bs->led_flicker_state.config == TFP_COMMON_STATUS_LED_OFF) {
 		XMC_GPIO_SetOutputHigh(BOOTLOADER_STATUS_LED_PIN);
 	} else {
+		// We turn the LED on by default for all modes but "OFF"
 		XMC_GPIO_SetOutputLow(BOOTLOADER_STATUS_LED_PIN);
 	}
 
@@ -441,7 +443,7 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 #endif
 
 	// Increase counter for incoming message
-	bs->led_flicker_state.counter++;
+	led_flicker_increase_counter(&bs->led_flicker_state);
 
 	// Copy header in response, this has to be done for most of the functions anyway
 	uint8_t buffer[TFP_COMMON_RESPONSE_MESSAGE_LENGTH];

@@ -123,7 +123,7 @@ int main(void) {
 	bootloader_status.reboot_started_at = 0;
 	bootloader_status.hotplug_time      = 0;
 
-	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_ACTIVE;
+	bootloader_status.led_flicker_state.config  = LED_FLICKER_CONFIG_HEARTBEAT;
 	bootloader_status.led_flicker_state.counter = 0;
 	bootloader_status.led_flicker_state.start   = 0;
 
