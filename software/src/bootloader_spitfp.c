@@ -81,6 +81,7 @@ Optional Improvement:
 #define SPITFP_MAX_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
 
 #define SPITFP_TIMEOUT 20 // in ms
+#define SPITFP_HOTPLUG_TIMEOUT 2000 // Send enumerate after 2000ms if there was no request for it
 
 void spitfp_init(SPITFP *st) {
 	st->last_sequence_number_seen = 0;
@@ -265,11 +266,38 @@ void spitfp_handle_protocol_error(SPITFP *st) {
 	while(ringbuffer_get(&st->ringbuffer_recv, &data));
 }
 
+void spitfp_handle_hotplug(BootloaderStatus *bootloader_status) {
+	if(bootloader_status->hotplug_time == UINT32_MAX) {
+		// Startup already handled
+		return;
+	} else if(bootloader_status->hotplug_time == 0) {
+		// We got the first data, start timer!
+		bootloader_status->hotplug_time = bootloader_status->system_timer_tick;
+	} else if((bootloader_status->system_timer_tick - bootloader_status->hotplug_time) >= SPITFP_HOTPLUG_TIMEOUT) {
+		// TODO: Disable interrupts
+
+		// Lets fake a co mcu enumerate message
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x0B);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x01);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x00);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x00);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x00);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x00);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x08);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0xFC);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x00);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0x00);
+		ringbuffer_add(&bootloader_status->st.ringbuffer_recv, 0xCC);
+		bootloader_status->hotplug_time = UINT32_MAX;
+
+		// TODO: Enable interrupts
+	}
+}
+
 void spitfp_tick(BootloaderStatus *bootloader_status) {
 	XMC_WDT_Service();
 	SPITFP *st = &bootloader_status->st;
 
-	// Is this necessary here? We already handle this in case of NVMCTRL
 	tfp_common_handle_reset(bootloader_status);
 	led_flicker_tick(&bootloader_status->led_flicker_state, bootloader_status->system_timer_tick, BOOTLOADER_STATUS_LED_PIN);
 
@@ -286,6 +314,10 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 	SPITFPState state = SPITFP_STATE_START;
 	uint16_t used = ringbuffer_get_used(&st->ringbuffer_recv);
 	uint16_t start = st->ringbuffer_recv.start;
+
+	if(used > 0) {
+		spitfp_handle_hotplug(bootloader_status);
+	}
 
 	for(uint16_t i = start; i < start+used; i++) {
 		const uint16_t index = i % SPITFP_RECEIVE_BUFFER_SIZE;
