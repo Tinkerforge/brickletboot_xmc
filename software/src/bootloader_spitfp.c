@@ -436,7 +436,12 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 					// If sequence number is new, we can handle the message.
 					// Otherwise we only ACK the already handled message again.
 					const uint8_t message_sequence_number = data_sequence_number & 0x0F;
-					if(message_sequence_number != st->last_sequence_number_seen) {
+					if((message_sequence_number != st->last_sequence_number_seen) || (message_sequence_number == 1)) {
+						// For the special case that the sequence number is 1 (only used for the very first message)
+						// we always send an answer, even if we havn't seen anything else in between.
+						// Otherwise it is not possible to reset the Master Brick if no messages were exchanged before
+						// the reset
+
 						st->last_sequence_number_seen = message_sequence_number;
 						// The handle message function will send an ACK for the message
 						// if it can handle the message at the current moment.
