@@ -370,7 +370,7 @@ BootloaderHandleMessageResponse tfp_common_enumerate(const TFPCommonEnumerate *d
 	response->header.fid              = TFP_COMMON_FID_ENUMERATE_CALLBACK;
 	response->header.sequence_num     = 0; // Sequence number for callback is 0
 	response->header.return_expected  = 1;
-	response->header.authentication   = 0; // TODO
+	response->header.authentication   = 0;
 	response->header.other_options    = 0;
 	response->header.error            = 0;
 	response->header.future_use       = 0;
@@ -429,9 +429,6 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 		return;
 	}
 #endif
-
-	// TODO: Wait for ~1 second after startup for CoMCUEnumerate message. If there is none,
-	//       send an "answer" to it anyway
 
 #if 0
 	const uint8_t message_length = tfp_get_length_from_message(message);
