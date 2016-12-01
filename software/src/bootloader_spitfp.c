@@ -323,6 +323,7 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 
 	if(used > 0) {
 		spitfp_handle_hotplug(bootloader_status);
+		used = ringbuffer_get_used(&st->ringbuffer_recv);
 	}
 
 	for(uint16_t i = start; i < start+used; i++) {
