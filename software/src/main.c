@@ -115,9 +115,6 @@ int main(void) {
 		boot_jump_to_firmware();
 	}
 
-	// By default we turn status LED off in bootloader mode
-	XMC_GPIO_SetOutputHigh(BOOTLOADER_STATUS_LED_PIN);
-
 	bootloader_status.boot_mode         = BOOT_MODE_BOOTLOADER;
 	bootloader_status.system_timer_tick = 0;
 	bootloader_status.reboot_started_at = 0;
