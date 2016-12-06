@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
-if(${CMAKE_CURRENT_SOURCE_DIR}/cmake_config_custom.txt)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/cmake_config_custom.txt)
 	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_config_custom.txt)
 else()
 	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_config_default.txt)
