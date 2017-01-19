@@ -203,7 +203,7 @@ typedef struct {
 
 #define TFP_COMMON_RESPONSE_MESSAGE_LENGTH 80
 
-#define TFP_COMMON_UID_IN_FLASH (*((uint32_t *)(BOOTLOADER_FIRMWARE_START_POS + BOOTLOADER_FIRMWARE_SIZE - 4)))
+#define TFP_COMMON_UID_IN_FLASH (*((uint32_t *)(BOOTLOADER_FIRMWARE_START_POS + BOOTLOADER_FIRMWARE_SIZE + BOOTLOADER_FLASH_EEPROM_SIZE - 4)))
 
 
 // This global RAM is _not_ available if called from outside of bootloader,
@@ -211,6 +211,34 @@ typedef struct {
 static uint32_t tfp_common_firmware_last_page_written = 0;
 static uint32_t tfp_common_firmware_pointer = 0;
 static uint8_t tfp_common_firmware_page[TFP_COMMON_XMC1_PAGE_SIZE];
+
+// Page num from back to front!
+// Data has to be of size TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t)
+void tfp_common_read_eeprom_page(const uint32_t page_num, uint32_t *data) {
+	uint32_t *page_pointer = (uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + BOOTLOADER_FIRMWARE_SIZE + BOOTLOADER_FLASH_EEPROM_SIZE - TFP_COMMON_XMC1_PAGE_SIZE*(page_num+1));
+	memcpy(data, page_pointer, TFP_COMMON_XMC1_PAGE_SIZE);
+}
+
+// Page num from back to front!
+bool tfp_common_write_eeprom_page(const uint32_t page_num, uint32_t *data) {
+	// We don't allow to overwrite part of the firmware in this function
+	uint32_t eeprom_start = TFP_COMMON_XMC1_PAGE_SIZE*(page_num+1);
+	if(eeprom_start > BOOTLOADER_FLASH_EEPROM_SIZE) {
+		return false;
+	}
+
+	uint32_t *page_pointer = (uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + BOOTLOADER_FIRMWARE_SIZE + BOOTLOADER_FLASH_EEPROM_SIZE - eeprom_start);
+
+	__disable_irq();
+	XMC_FLASH_ErasePage(page_pointer);
+	while(XMC_FLASH_IsBusy());
+	XMC_FLASH_ProgramVerifyPage(page_pointer, data);
+	while(XMC_FLASH_IsBusy());
+	__enable_irq();
+
+	return true;
+}
+
 
 uint32_t tfp_common_get_uid(void) {
 	if(TFP_COMMON_UID_IN_FLASH == 0 || TFP_COMMON_UID_IN_FLASH == 1 || TFP_COMMON_UID_IN_FLASH == UINT32_MAX) {
@@ -404,19 +432,13 @@ BootloaderHandleMessageResponse tfp_common_write_uid(const TFPCommonWriteUID *da
 		return HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER;
 	}
 
-	uint32_t *last_page = (uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + BOOTLOADER_FIRMWARE_SIZE - TFP_COMMON_XMC1_PAGE_SIZE);
 	uint32_t last_page_content[TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t)];
-	memcpy(last_page_content, last_page, TFP_COMMON_XMC1_PAGE_SIZE);
+	tfp_common_read_eeprom_page(0, last_page_content);
 
 	// UID is always in last 4 bytes of last page of flash
 	last_page_content[TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t) - 1] = data->uid;
 
-	__disable_irq();
-	XMC_FLASH_ErasePage(last_page);
-	while(XMC_FLASH_IsBusy());
-	XMC_FLASH_ProgramVerifyPage(last_page, last_page_content);
-	while(XMC_FLASH_IsBusy());
-	__enable_irq();
+	tfp_common_write_eeprom_page(0, last_page_content);
 
 	return HANDLE_MESSAGE_RESPONSE_EMPTY;
 }

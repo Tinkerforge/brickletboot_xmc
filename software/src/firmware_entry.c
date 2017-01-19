@@ -105,6 +105,14 @@ void firmware_entry_handle(BootloaderFunctions *bf, BootloaderStatus *bs) {
 	bf->__aeabi_uidivmod = __aeabi_uidivmod;
 #endif
 
+#ifdef BOOTLOADER_FUNCTION_READ_PAGE
+	bf->read_eeprom_page = tfp_common_read_eeprom_page;
+#endif
+
+#ifdef BOOTLOADER_FUNCTION_WRITE_PAGE
+	bf->write_eeprom_page = tfp_common_write_eeprom_page;
+#endif
+
 	spitfp_init(&bs->st);
 }
 

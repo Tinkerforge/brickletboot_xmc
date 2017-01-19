@@ -38,5 +38,7 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 void tfp_common_handle_reset(BootloaderStatus *bs);
 
 uint32_t tfp_common_get_uid(void);
+void tfp_common_read_eeprom_page(const uint32_t page_num, uint32_t *data);
+bool tfp_common_write_eeprom_page(const uint32_t page_num, uint32_t *data);
 
 #endif
