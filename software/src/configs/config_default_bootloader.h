@@ -33,6 +33,8 @@
 #define BOOTLOADER_STATUS_LED_PIN      P2_1
 #define BOOTLOADER_BOOT_PAD_PIN        P4_6
 
+#define BOOTLOADER_FLASH_EEPROM_SIZE   (4*256)
+
 
 // --- SPITFP ---
 #define SPITFP_USIC_CHANNEL         USIC0_CH0
