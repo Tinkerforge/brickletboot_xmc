@@ -32,6 +32,14 @@ if(CHIP MATCHES "^XMC11.*$")
 INCLUDE_DIRECTORIES(
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/xmclib/CMSIS/Infineon/XMC1100_series/Include/"
 )
+elseif(CHIP MATCHES "^XMC12.*")
+INCLUDE_DIRECTORIES(
+	"${PROJECT_SOURCE_DIR}/src/bricklib2/xmclib/CMSIS/Infineon/XMC1200_series/Include/"
+)
+elseif(CHIP MATCHES "^XMC13.*")
+INCLUDE_DIRECTORIES(
+	"${PROJECT_SOURCE_DIR}/src/bricklib2/xmclib/CMSIS/Infineon/XMC1300_series/Include/"
+)
 elseif(CHIP MATCHES "^XMC14.*")
 INCLUDE_DIRECTORIES(
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/xmclib/CMSIS/Infineon/XMC1400_series/Include/"
@@ -70,6 +78,14 @@ SET(SOURCES
 if(CHIP MATCHES "^XMC11.*$")
 SET(SOURCES "${SOURCES}"
 	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/startup/startup_xmc1100.S"
+)
+elseif(CHIP MATCHES "^XMC12.*")
+SET(SOURCES "${SOURCES}"
+	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/startup/startup_xmc1200.S"
+)
+elseif(CHIP MATCHES "^XMC13.*")
+SET(SOURCES "${SOURCES}"
+	"${PROJECT_SOURCE_DIR}/src/bricklib2/hal/startup/startup_xmc1300.S"
 )
 elseif(CHIP MATCHES "^XMC14.*")
 SET(SOURCES "${SOURCES}"
