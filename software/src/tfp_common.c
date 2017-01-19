@@ -42,6 +42,8 @@
 #define TFP_COMMON_FID_GET_PROTOCOL1_BRICKLET_NAME 241 // unused ?
 #define TFP_COMMON_FID_GET_CHIP_TEMPERATURE 242 // unused ?
 #define TFP_COMMON_FID_RESET 243
+#define TFP_COMMON_FID_WRITE_UID 248
+#define TFP_COMMON_FID_READ_UID 249
 #define TFP_COMMON_FID_GET_ADC_CALIBRATION 250 // unused ?
 #define TFP_COMMON_FID_ADC_CALIBRATE 251 // unused ?
 #define TFP_COMMON_FID_CO_MCU_ENUMERATE 252
@@ -148,6 +150,20 @@ typedef struct {
 typedef struct {
 	TFPMessageHeader header;
 	uint32_t uid;
+} __attribute__((__packed__)) TFPCommonWriteUID;
+
+typedef struct {
+	TFPMessageHeader header;
+} __attribute__((__packed__)) TFPCommonReadUID;
+
+typedef struct {
+	TFPMessageHeader header;
+	uint32_t uid;
+} __attribute__((__packed__)) TFPCommonReadUIDResponse;
+
+typedef struct {
+	TFPMessageHeader header;
+	uint32_t uid;
 } __attribute__((packed)) TFPCommonCoMCUEnumerateResponse;
 
 typedef struct {
@@ -187,23 +203,30 @@ typedef struct {
 
 #define TFP_COMMON_RESPONSE_MESSAGE_LENGTH 80
 
+#define TFP_COMMON_UID_IN_FLASH (*((uint32_t *)(BOOTLOADER_FIRMWARE_START_POS + BOOTLOADER_FIRMWARE_SIZE - 4)))
+
 
 // This global RAM is _not_ available if called from outside of bootloader,
 // make sure that it is only used in bootloader mode!
+static uint32_t tfp_common_firmware_last_page_written = 0;
 static uint32_t tfp_common_firmware_pointer = 0;
 static uint8_t tfp_common_firmware_page[TFP_COMMON_XMC1_PAGE_SIZE];
 
 uint32_t tfp_common_get_uid(void) {
-	// For normal Bricks the last bit is always 1
-	// For RED Bricks the last two bits are always 01
-	// For co processor Bricklets the last three bits are always 001
-	uint32_t *unique_chip_id = (uint32_t*)0x10000FF0;
+	if(TFP_COMMON_UID_IN_FLASH == 0 || TFP_COMMON_UID_IN_FLASH == 1 || TFP_COMMON_UID_IN_FLASH == UINT32_MAX) {
+		// For normal Bricks the last bit is always 1
+		// For RED Bricks the last two bits are always 01
+		// For co processor Bricklets the last three bits are always 001
+		uint32_t *unique_chip_id = (uint32_t*)0x10000FF0;
 
-	uint32_t uid = unique_chip_id[0] ^ unique_chip_id[1] ^ unique_chip_id[2] ^ unique_chip_id[3];
-	uid |= (1 << 29);
-	uid &= ~((1 << 30) | (1 << 31));
+		uint32_t uid = unique_chip_id[0] ^ unique_chip_id[1] ^ unique_chip_id[2] ^ unique_chip_id[3];
+		uid |= (1 << 29);
+		uid &= ~((1 << 30) | (1 << 31));
 
-	return uid;
+		return uid;
+	}
+
+	return TFP_COMMON_UID_IN_FLASH;
 }
 
 BootloaderHandleMessageResponse tfp_common_get_spitfp_error_count(const TFPCommonGetSPITFPErrorCount *data, TFPCommonGetSPITFPErrorCountResponse *response, BootloaderStatus *bs) {
@@ -340,6 +363,35 @@ BootloaderHandleMessageResponse tfp_common_reset(const TFPCommonReset *data, Boo
 	return HANDLE_MESSAGE_RESPONSE_EMPTY;
 }
 
+BootloaderHandleMessageResponse tfp_common_read_uid(const TFPCommonWriteUID *data, TFPCommonReadUIDResponse *response) {
+	response->header.length = sizeof(TFPCommonReadUIDResponse);
+	response->uid = tfp_common_get_uid();
+
+	return HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE;
+}
+
+BootloaderHandleMessageResponse tfp_common_write_uid(const TFPCommonWriteUID *data) {
+	if((data->uid == 0) || (data->uid == 1) || (data->uid == UINT32_MAX)) {
+		return HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER;
+	}
+
+	uint32_t *last_page = (uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + BOOTLOADER_FIRMWARE_SIZE - TFP_COMMON_XMC1_PAGE_SIZE);
+	uint32_t last_page_content[TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t)];
+	memcpy(last_page_content, last_page, TFP_COMMON_XMC1_PAGE_SIZE);
+
+	// UID is always in last 4 bytes of last page of flash
+	last_page_content[TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t) - 1] = data->uid;
+
+	__disable_irq();
+	XMC_FLASH_ErasePage(last_page);
+	while(XMC_FLASH_IsBusy());
+	XMC_FLASH_ProgramVerifyPage(last_page, last_page_content);
+	while(XMC_FLASH_IsBusy());
+	__enable_irq();
+
+	return HANDLE_MESSAGE_RESPONSE_EMPTY;
+}
+
 BootloaderHandleMessageResponse tfp_common_get_identity(const TFPCommonGetIdentity *data, TFPCommonGetIdentityResponse *response) {
 	response->header.uid    = tfp_common_get_uid();
 	response->header.length = sizeof(TFPCommonGetIdentityResponse);
@@ -459,6 +511,8 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 		case TFP_COMMON_FID_GET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_get_status_led_config(message, response, bs);  break;
 		case TFP_COMMON_FID_GET_CHIP_TEMPERATURE:       handle_message_return = tfp_common_get_chip_temperature(message, response);       break;
 		case TFP_COMMON_FID_RESET:                      handle_message_return = tfp_common_reset(message,  bs);                           break;
+		case TFP_COMMON_FID_WRITE_UID:                  handle_message_return = tfp_common_write_uid(message);                            break;
+		case TFP_COMMON_FID_READ_UID:                   handle_message_return = tfp_common_read_uid(message, response);                   break;
 		case TFP_COMMON_FID_CO_MCU_ENUMERATE:           handle_message_return = tfp_common_co_mcu_enumerate(message, response);           break;
 		case TFP_COMMON_FID_ENUMERATE:                  handle_message_return = tfp_common_enumerate(message, response);                  break;
 		case TFP_COMMON_FID_GET_IDENTITY:               handle_message_return = tfp_common_get_identity(message, response);               break;
