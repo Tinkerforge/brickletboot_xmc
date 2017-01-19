@@ -309,7 +309,36 @@ BootloaderHandleMessageResponse tfp_common_write_firmware(const TFPCommonWriteFi
 		XMC_FLASH_ProgramVerifyPage(page_address, (uint32_t*)tfp_common_firmware_page);
 		while(XMC_FLASH_IsBusy());
 		__enable_irq();
+
+		// If this page is not the successor of the last page that we wrote
+		// we fill the other pages in with zero
+		uint32_t page_written = tfp_common_firmware_pointer / TFP_COMMON_XMC1_PAGE_SIZE;
+		if((tfp_common_firmware_last_page_written < page_written) && (page_written - tfp_common_firmware_last_page_written)  > 1) {
+			const uint32_t zero_page[TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t)] = {0};
+			for(uint32_t page = tfp_common_firmware_last_page_written + 1; page < page_written; page++) {
+				// Find out if the page is already filled with zeroes
+				uint32_t *page_address = (uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + (page * TFP_COMMON_XMC1_PAGE_SIZE));
+				bool flash = false;
+				for(uint32_t i = 0; i < TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t); i++) {
+					if(page_address[i] != 0) {
+						flash = true;
+					}
+				}
+				// If the flash is not filled with zeroes we write them
+				if(flash) {
+					__disable_irq();
+					XMC_FLASH_ErasePage(page_address);
+					while(XMC_FLASH_IsBusy());
+					XMC_FLASH_ProgramVerifyPage(page_address, zero_page);
+					while(XMC_FLASH_IsBusy());
+					__enable_irq();
+				}
+			}
+		}
+
+		tfp_common_firmware_last_page_written = page_written;
 	}
+
 
 	response->status = TFP_COMMON_WRITE_FIRMWARE_STATUS_OK;
 
