@@ -308,6 +308,22 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 	tfp_common_handle_reset(bootloader_status);
 	led_flicker_tick(&bootloader_status->led_flicker_state, bootloader_status->system_timer_tick, BOOTLOADER_STATUS_LED_PIN);
 
+	// If the temporary buffer length is > 0 we still have a message to handle
+	if(st->buffer_recv_tmp_length > 0) {
+		if(spitfp_is_send_possible(st)) {
+			if(st->buffer_recv_tmp_length == SPITFP_PROTOCOL_OVERHEAD) {
+				// If the length is set to SPITFP_PROTOCOL_OVERHEAD we just have to answer with an ACK
+				spitfp_send_ack(bootloader_status);
+			} else {
+				// Otherwise we send the whole message with the corresponding length
+				tfp_common_handle_message(st->buffer_recv_tmp, st->buffer_recv_tmp_length, bootloader_status);
+			}
+
+			// In both cases the length is set to 0 afterwards and the temporary buffer can be written again.
+			st->buffer_recv_tmp_length = 0;
+		}
+	}
+
 	spitfp_check_message_send_timeout(bootloader_status);
 
 	uint8_t message[TFP_MESSAGE_MAX_LENGTH] = {0};
@@ -440,7 +456,10 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 					}
 				}
 
-				if(spitfp_is_send_possible(st)) {
+				// If we already have one recv message in the temporary buffer,
+				// we don't handle the newly received message and just throw it away.
+				// The SPI master will send it again.
+				if(st->buffer_recv_tmp_length == 0) {
 					// If sequence number is new, we can handle the message.
 					// Otherwise we only ACK the already handled message again.
 					const uint8_t message_sequence_number = data_sequence_number & 0x0F;
@@ -453,14 +472,24 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 						st->last_sequence_number_seen = message_sequence_number;
 						// The handle message function will send an ACK for the message
 						// if it can handle the message at the current moment.
-						// Otherwise it return false. In that case the SPI master
-						// will send the message again and we can handle it then.
-						tfp_common_handle_message(message, message_position, bootloader_status);
+						// Otherwise it will save the message and length for it it be send
+						// later on.
+						if(spitfp_is_send_possible(st)) {
+							tfp_common_handle_message(message, message_position, bootloader_status);
+						} else {
+							st->buffer_recv_tmp_length = message_position;
+							memcpy(st->buffer_recv_tmp, message, message_position);
+						}
 					} else {
-						spitfp_send_ack(bootloader_status);
+						if(spitfp_is_send_possible(st)) {
+							spitfp_send_ack(bootloader_status);
+						} else {
+							// If we want to send an ACK but currently can't, we set the
+							// temporary recv buffer length to SPITFP_PROTOCOL_OVERHEAD.
+							st->buffer_recv_tmp_length = SPITFP_PROTOCOL_OVERHEAD;
+						}
 					}
 				}
-
 				return;
 			}
 		}
