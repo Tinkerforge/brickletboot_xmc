@@ -86,8 +86,8 @@ Optional Improvement:
 void spitfp_init(SPITFP *st) {
 	st->last_sequence_number_seen = 0;
 	st->current_sequence_number = 1;
-	st->buffer_send_index = 0;
-	st->buffer_send_length = 0;
+	st->buffer_send_pointer = st->buffer_send;
+	st->buffer_send_pointer_end = st->buffer_send;
 
 	// Configure ring buffer
 	memset(&st->buffer_recv, 0, SPITFP_RECEIVE_BUFFER_SIZE);
@@ -203,9 +203,10 @@ void spitfp_send_ack_and_message(BootloaderStatus *bs, uint8_t *data, const uint
 
 	SPITFP *st = &bs->st;
 	uint8_t checksum = 0;
-	st->buffer_send_length = length + SPITFP_PROTOCOL_OVERHEAD;
-	st->buffer_send[0] = st->buffer_send_length;
-	PEARSON(checksum, st->buffer_send_length);
+	const uint8_t buffer_send_length = length + SPITFP_PROTOCOL_OVERHEAD;
+	st->buffer_send_pointer_end = st->buffer_send + buffer_send_length - 1;
+	st->buffer_send[0] = buffer_send_length;
+	PEARSON(checksum, buffer_send_length);
 
 	st->buffer_send[1] = spitfp_get_sequence_byte(st, true);
 	PEARSON(checksum, st->buffer_send[1]);
@@ -217,7 +218,7 @@ void spitfp_send_ack_and_message(BootloaderStatus *bs, uint8_t *data, const uint
 
 	st->buffer_send[length + SPITFP_PROTOCOL_OVERHEAD-1] = checksum;
 
-	st->buffer_send_index = 0;
+	st->buffer_send_pointer = st->buffer_send;
 	XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
 	XMC_USIC_CH_TriggerServiceRequest(SPITFP_USIC, SPITFP_SERVICE_REQUEST_TX);
 
@@ -231,9 +232,9 @@ void spitfp_send_ack(BootloaderStatus *bs) {
 	st->buffer_send[1] = st->last_sequence_number_seen << 4;
 	st->buffer_send[2] = pearson_permutation[pearson_permutation[st->buffer_send[0]] ^ st->buffer_send[1]];
 
-	st->buffer_send_length = SPITFP_PROTOCOL_OVERHEAD;
+	bs->st.buffer_send_pointer_end = st->buffer_send + SPITFP_PROTOCOL_OVERHEAD - 1;
+	bs->st.buffer_send_pointer = st->buffer_send;
 
-	st->buffer_send_index = 0;
 	XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
 	XMC_USIC_CH_TriggerServiceRequest(SPITFP_USIC, SPITFP_SERVICE_REQUEST_TX);
 
@@ -241,19 +242,19 @@ void spitfp_send_ack(BootloaderStatus *bs) {
 }
 
 bool spitfp_is_send_possible(SPITFP *st) {
-	return st->buffer_send_length == 0;
+	return st->buffer_send_pointer_end == st->buffer_send;
 }
 
 void spitfp_check_message_send_timeout(BootloaderStatus *bs) {
 	// If there is still data in the buffer (we did not receive an ack) and
 	// we are currently not sending data and was longer then SPITFP_TIMEOUT ms
 	// ago that we send data, we will try again!
-	if((bs->st.buffer_send_length > 0) &&
-	   (bs->st.buffer_send_index >= bs->st.buffer_send_length) &&
+	if((bs->st.buffer_send_pointer_end > bs->st.buffer_send) &&
+	   (bs->st.buffer_send_pointer >= bs->st.buffer_send_pointer_end) &&
 	   ((bs->system_timer_tick - bs->st.last_send_started) >= SPITFP_TIMEOUT)) {
 
 		// We leave the old message the same and try again
-		bs->st.buffer_send_index = 0;
+		bs->st.buffer_send_pointer = bs->st.buffer_send;
 		bs->st.last_send_started = bs->system_timer_tick;
 		XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
 		XMC_USIC_CH_TriggerServiceRequest(SPITFP_USIC, SPITFP_SERVICE_REQUEST_TX);
@@ -387,8 +388,8 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 					// If we got a timeout and are now re-sending the message, it
 					// is possible that we are currently sending this message again.
 					// Check if it was send completely
-					if(st->buffer_send_index == st->buffer_send_length) {
-						st->buffer_send_length = 0;
+					if(st->buffer_send_pointer == st->buffer_send_pointer_end) {
+						st->buffer_send_pointer_end = st->buffer_send;
 					}
 				}
 
@@ -434,8 +435,8 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 					// If we got a timeout and are now re-sending the message, it
 					// is possible that we are currently sending this message again.
 					// Check if it was send completely
-					if(st->buffer_send_index == st->buffer_send_length) {
-						st->buffer_send_length = 0;
+					if(st->buffer_send_pointer == st->buffer_send_pointer_end) {
+						st->buffer_send_pointer_end = st->buffer_send;
 					}
 				}
 
