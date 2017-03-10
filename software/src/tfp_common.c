@@ -61,8 +61,8 @@
 
 #define TFP_COMMON_STATUS_LED_OFF            0
 #define TFP_COMMON_STATUS_LED_ON             1
-#define TFP_COMMON_STATUS_LED_SHOW_STATUS    2
-#define TFP_COMMON_STATUS_LED_SHOW_HEARTBEAT 3
+#define TFP_COMMON_STATUS_LED_SHOW_HEARTBEAT 2
+#define TFP_COMMON_STATUS_LED_SHOW_STATUS    3
 
 #define TFP_COMMON_WRITE_FIRMWARE_STATUS_OK              0
 #define TFP_COMMON_WRITE_FIRMWARE_STATUS_INVALID_POINTER 1
@@ -374,7 +374,7 @@ BootloaderHandleMessageResponse tfp_common_write_firmware(const TFPCommonWriteFi
 }
 
 BootloaderHandleMessageResponse tfp_common_set_status_led_config(const TFPCommonSetStatusLEDConfig *data, BootloaderStatus *bs) {
-	if(data->config > TFP_COMMON_STATUS_LED_SHOW_HEARTBEAT) {
+	if(data->config > TFP_COMMON_STATUS_LED_SHOW_STATUS) {
 		return HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER;
 	}
 
