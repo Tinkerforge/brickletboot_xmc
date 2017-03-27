@@ -80,7 +80,7 @@ Optional Improvement:
 #define SPITFP_MIN_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MIN_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
 #define SPITFP_MAX_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
 
-#define SPITFP_TIMEOUT 20 // in ms
+#define SPITFP_TIMEOUT 5 // in ms
 #define SPITFP_HOTPLUG_TIMEOUT 1000 // Send enumerate after 2000ms if there was no request for it
 
 void spitfp_init(SPITFP *st) {
@@ -344,8 +344,15 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 	}
 
 	for(uint16_t i = start; i < start+used; i++) {
-		const uint16_t index = i % SPITFP_RECEIVE_BUFFER_SIZE;
+		const uint16_t index = i & SPITFP_RECEIVE_BUFFER_MASK;
 		const uint8_t data = st->buffer_recv[index];
+
+		// Handle "standard case" first (we are sending data and Master has nothing to send)
+		if(state == SPITFP_STATE_START && data == 0) {
+			// equivalent (but faster) to "ringbuffer_remove(&st->ringbuffer_recv, 1);"
+			st->ringbuffer_recv.start = (st->ringbuffer_recv.start + 1) & SPITFP_RECEIVE_BUFFER_MASK;
+			continue;
+		}
 		num_to_remove_from_ringbuffer++;
 
 		switch(state) {
@@ -358,7 +365,8 @@ void spitfp_tick(BootloaderStatus *bootloader_status) {
 				} else if(data >= SPITFP_MIN_TFP_MESSAGE_LENGTH && data <= SPITFP_MAX_TFP_MESSAGE_LENGTH) {
 					state = SPITFP_STATE_MESSAGE_SEQUENCE_NUMBER;
 				} else if(data == 0) {
-					ringbuffer_remove(&st->ringbuffer_recv, 1);
+					// equivalent (but faster) to "ringbuffer_remove(&st->ringbuffer_recv, 1);"
+					st->ringbuffer_recv.start = (st->ringbuffer_recv.start + 1) & SPITFP_RECEIVE_BUFFER_MASK;
 					num_to_remove_from_ringbuffer--;
 					break;
 				} else {
