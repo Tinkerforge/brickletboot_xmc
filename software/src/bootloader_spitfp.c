@@ -110,21 +110,21 @@ void spitfp_init(SPITFP *st) {
 	const XMC_GPIO_CONFIG_t mosi_pin_config = {
 	  .mode             = XMC_GPIO_MODE_INPUT_TRISTATE,
 	  .output_level     = XMC_GPIO_OUTPUT_LEVEL_HIGH,
-	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_STANDARD
+	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_LARGE
 	};
 
 	// SCLK pin configuration
 	const XMC_GPIO_CONFIG_t sclk_pin_config = {
 	  .mode             = XMC_GPIO_MODE_INPUT_TRISTATE,
 	  .output_level     = XMC_GPIO_OUTPUT_LEVEL_HIGH,
-	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_STANDARD
+	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_LARGE
 	};
 
 	// SELIN pin configuration
 	const XMC_GPIO_CONFIG_t slavesel_pin_config = {
 	  .mode             = XMC_GPIO_MODE_INPUT_TRISTATE,
 	  .output_level     = XMC_GPIO_OUTPUT_LEVEL_HIGH,
-	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_STANDARD
+	  .input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_LARGE
 	};
 
 	// Configure SCLK pin
