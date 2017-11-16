@@ -564,7 +564,7 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 		case TFP_COMMON_FID_RESET:                      handle_message_return = tfp_common_reset(message,  bs);                           break;
 		case TFP_COMMON_FID_WRITE_UID:                  handle_message_return = tfp_common_write_uid(message);                            break;
 		case TFP_COMMON_FID_READ_UID:                   handle_message_return = tfp_common_read_uid(message, response);                   break;
-		case TFP_COMMON_FID_CO_MCU_ENUMERATE:           handle_message_return = tfp_common_co_mcu_enumerate(message, response);           break;
+		case TFP_COMMON_FID_CO_MCU_ENUMERATE:           handle_message_return = tfp_common_co_mcu_enumerate(message, response); bs->hotplug_time = UINT32_MAX;  break;
 		case TFP_COMMON_FID_ENUMERATE:                  handle_message_return = tfp_common_enumerate(message, response);                  break;
 		case TFP_COMMON_FID_GET_IDENTITY:               handle_message_return = tfp_common_get_identity(message, response);               break;
 		default: {
