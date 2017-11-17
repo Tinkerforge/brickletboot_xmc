@@ -297,7 +297,7 @@ void spitfp_handle_hotplug(BootloaderStatus *bootloader_status) {
 		// Enable interrupt again
 		NVIC_EnableIRQ((IRQn_Type)SPITFP_IRQ_RX);
 
-		bootloader_status->hotplug_time = UINT32_MAX;
+		bootloader_status->hotplug_time = bootloader_status->system_timer_tick;
 	}
 }
 
