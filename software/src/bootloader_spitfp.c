@@ -85,7 +85,7 @@ Optional Improvement:
 
 void spitfp_init(SPITFP *st) {
 	st->last_sequence_number_seen = 0;
-	st->current_sequence_number = 1;
+	st->current_sequence_number = 0; // Initialize sequence number as 0, so the first one will be written as 1.
 	st->buffer_send_pointer = st->buffer_send;
 	st->buffer_send_pointer_end = st->buffer_send;
 
