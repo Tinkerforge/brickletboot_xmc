@@ -552,6 +552,11 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 
 	BootloaderHandleMessageResponse handle_message_return = HANDLE_MESSAGE_RESPONSE_EMPTY;
 
+#ifdef BOOTLOADER_ISOLATOR
+	const uint32_t message_uid = tfp_get_uid_from_message(message);
+	if((message_uid == tfp_common_get_uid()) || (message_uid == 0)) {
+#endif
+
 	switch(tfp_get_fid_from_message(message)) {
 		case TFP_COMMON_FID_GET_SPITFP_ERROR_COUNT:     handle_message_return = tfp_common_get_spitfp_error_count(message, response, bs); break;
 		case TFP_COMMON_FID_SET_BOOTLOADER_MODE:        handle_message_return = tfp_common_set_bootloader_mode(message, response, bs);    break;
@@ -578,6 +583,20 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 		}
 	}
 
+#ifdef BOOTLOADER_ISOLATOR
+	} 
+	
+	if(bs->boot_mode == BOOT_MODE_FIRMWARE) {
+		if(message_uid == 0) {
+			// Here the isolator firmware has to make sure that a message with uid 0 never directly returns
+			// an answer. This would otherwise overwrite the answer from the isolator.
+			bs->firmware_handle_message_func(message, response);
+		} else if(message_uid != tfp_common_get_uid()) {
+			handle_message_return = bs->firmware_handle_message_func(message, response);
+		}
+	}
+#endif
+
 	bool has_message = true;
 	if(handle_message_return != HANDLE_MESSAGE_RESPONSE_NEW_MESSAGE) {
 		has_message = tfp_is_return_expected(message);
@@ -594,6 +613,10 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 				case HANDLE_MESSAGE_RESPONSE_EMPTY:             ret_header->error = TFP_MESSAGE_ERROR_CODE_OK;                break;
 				case HANDLE_MESSAGE_RESPONSE_NOT_SUPPORTED:     ret_header->error = TFP_MESSAGE_ERROR_CODE_NOT_SUPPORTED;     break;
 				case HANDLE_MESSAGE_RESPONSE_INVALID_PARAMETER: ret_header->error = TFP_MESSAGE_ERROR_CODE_INVALID_PARAMETER; break;
+				// With HANDLE_MESSAGE_RESPONSE = "NONE" we allow a Bricklet to decide that there is definitely no answer, even
+				// if the response expected flag was set. This is needed by the isolator. The response expected flag
+				// of the isolator will be handled by the bootloader of the connected Bricklet.
+				case HANDLE_MESSAGE_RESPONSE_NONE:              has_message = false; break;
 				default: break;
 			}
 		}
