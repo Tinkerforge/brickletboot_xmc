@@ -73,11 +73,7 @@ Protocol information:
 #include "bricklib2/utility/led_flicker.h"
 #include "bricklib2/logging/logging.h"
 
-#define SPITFP_MIN_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MIN_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
-#define SPITFP_MAX_TFP_MESSAGE_LENGTH (TFP_MESSAGE_MAX_LENGTH + SPITFP_PROTOCOL_OVERHEAD)
-
-#define SPITFP_TIMEOUT 5 // in ms
-#define SPITFP_HOTPLUG_TIMEOUT 1000 // Send enumerate after 2000ms if there was no request for it
+#include "bricklib2/protocols/spitfp/spitfp.h"
 
 void spitfp_init(SPITFP *st) {
 	st->last_sequence_number_seen = 0;
