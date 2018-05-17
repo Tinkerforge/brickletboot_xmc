@@ -247,6 +247,21 @@ void spitfp_check_message_send_timeout(BootloaderStatus *bs) {
 
 		// We leave the old message the same and try again
 		bs->st.buffer_send_pointer = bs->st.buffer_send;
+
+		// Update sequence number of send buffer. We don't increase the current sequence
+		// number, but if we have seen a new message from the master we insert
+		// the updated "last seen sequence number".
+		// If the number changed we also have to update the checksum.
+		uint8_t new_sequence_byte = spitfp_get_sequence_byte(&bs->st, false);
+		if(new_sequence_byte != bs->st.buffer_send[1]) {
+			bs->st.buffer_send[1] = new_sequence_byte;
+			uint8_t checksum = 0;
+			for(uint8_t i = 0; i < bs->st.buffer_send[0]-1; i++) {
+				PEARSON(checksum, bs->st.buffer_send[i]);
+			}
+			bs->st.buffer_send[bs->st.buffer_send[0]-1] = checksum;
+		}
+
 		bs->st.last_send_started = bs->system_timer_tick;
 		XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
 		XMC_USIC_CH_TriggerServiceRequest(SPITFP_USIC, SPITFP_SERVICE_REQUEST_TX);
