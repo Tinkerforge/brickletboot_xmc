@@ -1,5 +1,5 @@
 /* brickletboot
- * Copyright (C) 2016 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2016-2018 Olaf Lüke <olaf@tinkerforge.com>
  *
  * spitfp.c: Tinkerforge Protocol (TFP) over SPI implementation
  *
