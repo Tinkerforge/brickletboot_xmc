@@ -94,6 +94,24 @@ void main_boot_pad_init(void) {
 }
 #endif
 
+#if defined(BOOTLOADER_CUSTOM_PIN1) || defined(BOOTLOADER_CUSTOM_PIN2)
+void main_custom_pin_init(void) {
+#ifdef BOOTLOADER_CUSTOM_PIN1
+	XMC_GPIO_CONFIG_t pin1;
+	pin1.mode = XMC_GPIO_MODE_OUTPUT_PUSH_PULL;
+	pin1.output_level = BOOTLOADER_CUSTOM_PIN1_OUTPUT_LEVEL;
+	XMC_GPIO_Init(BOOTLOADER_CUSTOM_PIN1, &pin1);
+#endif
+
+#ifdef BOOTLOADER_CUSTOM_PIN2
+	XMC_GPIO_CONFIG_t pin2;
+	pin2.mode = XMC_GPIO_MODE_OUTPUT_PUSH_PULL;
+	pin2.output_level = BOOTLOADER_CUSTOM_PIN2_OUTPUT_LEVEL;
+	XMC_GPIO_Init(BOOTLOADER_CUSTOM_PIN2, &pin2);
+#endif
+}
+#endif
+
 int main(void) {
 #ifdef BOOTLOADER_ENABLE_BOOT_PAD
 	main_boot_pad_init();
@@ -103,6 +121,9 @@ int main(void) {
 	// bootloader as well as firmware
 	main_wdt_init();
 	main_led_init();
+#if defined(BOOTLOADER_CUSTOM_PIN1) || defined(BOOTLOADER_CUSTOM_PIN2)
+	main_custom_pin_init();
+#endif
 	XMC_SCU_StartTempMeasurement();
 
 	// Jump to firmware if we can
