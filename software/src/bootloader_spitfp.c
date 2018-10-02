@@ -196,7 +196,11 @@ void spitfp_send_ack_and_message(BootloaderStatus *bs, uint8_t *data, const uint
 	SPITFP *st = &bs->st;
 	uint8_t checksum = 0;
 	const uint8_t buffer_send_length = length + SPITFP_PROTOCOL_OVERHEAD;
+#ifdef BOOTLOADER_FIX_POINTER_END
+	st->buffer_send_pointer_end = st->buffer_send + buffer_send_length;
+#else
 	st->buffer_send_pointer_end = st->buffer_send + buffer_send_length - 1;
+#endif
 	st->buffer_send[0] = buffer_send_length;
 	PEARSON(checksum, buffer_send_length);
 
@@ -224,7 +228,11 @@ void spitfp_send_ack(BootloaderStatus *bs) {
 	st->buffer_send[1] = st->last_sequence_number_seen << 4;
 	st->buffer_send[2] = pearson_permutation[pearson_permutation[st->buffer_send[0]] ^ st->buffer_send[1]];
 
+#ifdef BOOTLOADER_FIX_POINTER_END
+	bs->st.buffer_send_pointer_end = st->buffer_send + SPITFP_PROTOCOL_OVERHEAD;
+#else
 	bs->st.buffer_send_pointer_end = st->buffer_send + SPITFP_PROTOCOL_OVERHEAD - 1;
+#endif
 	bs->st.buffer_send_pointer = st->buffer_send;
 
 	XMC_USIC_CH_TXFIFO_EnableEvent(SPITFP_USIC, XMC_USIC_CH_TXFIFO_EVENT_CONF_STANDARD);
