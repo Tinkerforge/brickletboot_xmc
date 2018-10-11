@@ -554,7 +554,8 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 
 #ifdef BOOTLOADER_ISOLATOR
 	const uint32_t message_uid = tfp_get_uid_from_message(message);
-	if((message_uid == tfp_common_get_uid()) || (message_uid == 0)) {
+	const uint32_t isolator_uid = tfp_common_get_uid();
+	if((message_uid == isolator_uid) || (message_uid == 0)) {
 #endif
 
 	switch(tfp_get_fid_from_message(message)) {
@@ -566,7 +567,7 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 		case TFP_COMMON_FID_SET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_set_status_led_config(message, bs);            break;
 		case TFP_COMMON_FID_GET_STATUS_LED_CONFIG:      handle_message_return = tfp_common_get_status_led_config(message, response, bs);  break;
 		case TFP_COMMON_FID_GET_CHIP_TEMPERATURE:       handle_message_return = tfp_common_get_chip_temperature(message, response);       break;
-		case TFP_COMMON_FID_RESET:                      handle_message_return = tfp_common_reset(message,  bs);                           break;
+		case TFP_COMMON_FID_RESET:                      handle_message_return = tfp_common_reset(message, bs);                            break;
 		case TFP_COMMON_FID_WRITE_UID:                  handle_message_return = tfp_common_write_uid(message);                            break;
 		case TFP_COMMON_FID_READ_UID:                   handle_message_return = tfp_common_read_uid(message, response);                   break;
 		case TFP_COMMON_FID_CO_MCU_ENUMERATE:           handle_message_return = tfp_common_co_mcu_enumerate(message, response); bs->hotplug_time = UINT32_MAX;  break;
@@ -591,7 +592,7 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 			// Here the isolator firmware has to make sure that a message with uid 0 never directly returns
 			// an answer. This would otherwise overwrite the answer from the isolator.
 			bs->firmware_handle_message_func(message, response);
-		} else if(message_uid != tfp_common_get_uid()) {
+		} else if(message_uid != isolator_uid) {
 			handle_message_return = bs->firmware_handle_message_func(message, response);
 		}
 	}
