@@ -94,7 +94,7 @@ void main_boot_pad_init(void) {
 }
 #endif
 
-#if defined(BOOTLOADER_CUSTOM_PIN1) || defined(BOOTLOADER_CUSTOM_PIN2)
+#if defined(BOOTLOADER_CUSTOM_PIN1) || defined(BOOTLOADER_CUSTOM_PIN2) || defined(BOOTLOADER_CUSTOM_PIN3)
 void main_custom_pin_init(void) {
 #ifdef BOOTLOADER_CUSTOM_PIN1
 	XMC_GPIO_CONFIG_t pin1;
@@ -109,6 +109,13 @@ void main_custom_pin_init(void) {
 	pin2.output_level = BOOTLOADER_CUSTOM_PIN2_OUTPUT_LEVEL;
 	XMC_GPIO_Init(BOOTLOADER_CUSTOM_PIN2, &pin2);
 #endif
+
+#ifdef BOOTLOADER_CUSTOM_PIN3
+	XMC_GPIO_CONFIG_t pin3;
+	pin3.mode = XMC_GPIO_MODE_OUTPUT_PUSH_PULL;
+	pin3.output_level = BOOTLOADER_CUSTOM_PIN3_OUTPUT_LEVEL;
+	XMC_GPIO_Init(BOOTLOADER_CUSTOM_PIN3, &pin3);
+#endif
 }
 #endif
 
@@ -121,7 +128,7 @@ int main(void) {
 	// bootloader as well as firmware
 	main_wdt_init();
 	main_led_init();
-#if defined(BOOTLOADER_CUSTOM_PIN1) || defined(BOOTLOADER_CUSTOM_PIN2)
+#if defined(BOOTLOADER_CUSTOM_PIN1) || defined(BOOTLOADER_CUSTOM_PIN2) || defined(BOOTLOADER_CUSTOM_PIN3)
 	main_custom_pin_init();
 #endif
 	XMC_SCU_StartTempMeasurement();
