@@ -546,7 +546,7 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	led_flicker_increase_counter(&bs->led_flicker_state);
 
 	// Copy header in response, this has to be done for most of the functions anyway
-	uint8_t buffer[TFP_COMMON_RESPONSE_MESSAGE_LENGTH];
+	uint8_t buffer[TFP_COMMON_RESPONSE_MESSAGE_LENGTH] = {0};
 	void *response = buffer;
 	memcpy(response, message, sizeof(TFPMessageHeader));
 
