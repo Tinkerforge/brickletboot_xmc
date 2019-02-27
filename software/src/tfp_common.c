@@ -526,7 +526,7 @@ void tfp_common_handle_reset(BootloaderStatus *bs) {
 void tfp_common_handle_message(const void *message, const uint8_t length, BootloaderStatus *bs) {
 	// Do we need to check for UID here? Or do we define that the Brick already checks this?
 #if 0
-	const uint32_t message_uid = tfp_get_fid_from_message(message);
+	const uint32_t message_uid = tfp_get_uid_from_message(message);
 	if((message_uid != tfp_common_get_uid()) && (message_uid != 0)) {
 		spitfp_send_ack(&bs->st);
 		return;
