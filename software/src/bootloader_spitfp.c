@@ -46,15 +46,25 @@ The protocol has three different kinds of packets:
   * Byte n: Checksum
 
 Protocol information:
-* Master polls with NoData Packet if no data is to send
-* Slave answers with NoData packet if no data is to send
-* Only send next packet if ACK was received
+* Master polls with NoData Packet (i.e. zero bytes) if no data is to be sent
+* Slave answers with NoData packet if no data is to be sent
+* Only send next packet if ACK was received. (i.e. only one packet can be "in flight" in each direction)
 * Send timeout is 20ms (re-send if no ACK is received after 20ms)
+
 * Increase sequence number if ACK was received
-* SPI MISO/MOSI data is just written to ringbuffer (if possible directly through dma)
 * Sequence number runs from 0x2 to 0xF (0 is for ACK Packet only, 1 is for the very first request)
+
+* Checksum is a pearson hash over all bytes of the packet (except the checksum byte itself)
+* see bricklib2/utility/pearson_hash.c
+
+* SPI MISO/MOSI data is just written to ringbuffer (if possible directly through dma)
 * Compared to the SPI stack protocol, this protocol is made for slow SPI clock speeds
 
+Bricklet behaviour:
+* Bricklet waits one second after being clocked per SPI for an enumerate request
+* If request is not received (e.g. if the Bricklet was hot-plugged to an already running Master Brick) one is injected into the Bricklet's receive buffer (see spitfp_handle_hotplug)
+* The bricklet then answers the request. This packet contains an acknowledgement for the enumerate request.
+* This can result in the Bricklet acking a packet that was never sent (because it was injected by the Bricklet itself).
 */
 
 #include "bootloader_spitfp.h"
