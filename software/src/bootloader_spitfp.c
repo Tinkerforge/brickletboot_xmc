@@ -49,7 +49,7 @@ Protocol information:
 * Master polls with NoData Packet (i.e. zero bytes) if no data is to be sent
 * Slave answers with NoData packet if no data is to be sent
 * Only send next packet if ACK was received. (i.e. only one packet can be "in flight" in each direction)
-* Send timeout is 20ms (re-send if no ACK is received after 20ms)
+* Send timeout is 5ms (re-send if no ACK is received after 5ms)
 
 * Increase sequence number if ACK was received
 * Sequence number runs from 0x2 to 0xF (0 is for ACK Packet only, 1 is for the very first request)
