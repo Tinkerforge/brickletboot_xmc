@@ -65,6 +65,8 @@ Bricklet behaviour:
 * If request is not received (e.g. if the Bricklet was hot-plugged to an already running Master Brick) one is injected into the Bricklet's receive buffer (see spitfp_handle_hotplug)
 * The bricklet then answers the request. This packet contains an acknowledgement for the enumerate request.
 * This can result in the Bricklet acking a packet that was never sent (because it was injected by the Bricklet itself).
+* When communicating with a Bricklet, either the enumerate request must be sent (or just wait for the self-injected one) and the response must be handled correctly.
+* If other packets are sent to the bricklet beforehand, it is possible, that the injection overwrites parts of the other packet in the Bricklet's receive buffer.
 */
 
 #include "bootloader_spitfp.h"
