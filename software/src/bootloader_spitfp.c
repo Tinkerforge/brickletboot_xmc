@@ -67,6 +67,7 @@ Bricklet behaviour:
 * This can result in the Bricklet acking a packet that was never sent (because it was injected by the Bricklet itself).
 * When communicating with a Bricklet, either the enumerate request must be sent (or just wait for the self-injected one) and the response must be handled correctly.
 * If other packets are sent to the bricklet beforehand, it is possible, that the injection overwrites parts of the other packet in the Bricklet's receive buffer.
+* Note: The injected enumerate request is a co_mcu_enumerate (FID=252) not the "normal" enumerate (FID=254). This results in a enumerate callback with type CONNECTED instead of AVAILABLE.
 */
 
 #include "bootloader_spitfp.h"
