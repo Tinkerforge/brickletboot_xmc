@@ -52,7 +52,7 @@ Protocol information:
 * Send timeout is 5ms (re-send if no ACK is received after 5ms)
 
 * Increase sequence number if ACK was received
-* Sequence number runs from 0x2 to 0xF (0 is for ACK Packet only, 1 is for the very first request)
+* Sequence number runs from 0x2 to 0xF (0 is for ACK Packet only, 1 is for the very first enumerate request)
 
 * Checksum is a pearson hash over all bytes of the packet (except the checksum byte itself)
 * see bricklib2/utility/pearson_hash.c
@@ -68,6 +68,7 @@ Bricklet behaviour:
 * When communicating with a Bricklet, either the enumerate request must be sent (or just wait for the self-injected one) and the response must be handled correctly.
 * If other packets are sent to the bricklet beforehand, it is possible, that the injection overwrites parts of the other packet in the Bricklet's receive buffer.
 * Note: The injected enumerate request is a co_mcu_enumerate (FID=252) not the "normal" enumerate (FID=254). This results in a enumerate callback with type CONNECTED instead of AVAILABLE.
+* If the enumerate request is sent by the other side, it has to have the sequence number 1.
 */
 
 #include "bootloader_spitfp.h"
