@@ -52,7 +52,10 @@ Protocol information:
 * Send timeout is 5ms (re-send if no ACK is received after 5ms)
 
 * Increase sequence number if ACK was received
-* Sequence number runs from 0x2 to 0xF (0 is for ACK Packet only, 1 is for the very first enumerate request)
+* Sequence number runs from 0x2 to 0xF (0 is for ACK Packet only; 1 is for the very first enumerate request, see below)
+* Sequence number 1 is reserved, because the bricklets will always answer with a complete packet to this sequence number:
+  If a brick resets without resetting the bricklets it could otherwise happen that the CoMCU enumerate request is ignored because
+  the bricklet has just seen exactly this packet. The bricklet then sends the acknowledgement only, but no response packet.
 
 * Checksum is a pearson hash over all bytes of the packet (except the checksum byte itself)
 * see bricklib2/utility/pearson_hash.c
