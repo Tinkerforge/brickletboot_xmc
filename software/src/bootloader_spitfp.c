@@ -1,5 +1,5 @@
 /* brickletboot
- * Copyright (C) 2016-2018 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2016-2018, 2022 Olaf Lüke <olaf@tinkerforge.com>
  *
  * spitfp.c: Tinkerforge Protocol (TFP) over SPI implementation
  *
@@ -86,6 +86,10 @@ Bricklet behaviour:
 #include "xmc_gpio.h"
 #include "xmc_wdt.h"
 
+#if defined(SPITFP_IRQ_TX_SCU_CTRL) || defined(SPITFP_IRQ_RX_SCU_CTRL)
+#include "xmc_scu.h"
+#endif
+
 #include "bricklib2/utility/pearson_hash.h"
 #include "bricklib2/utility/led_flicker.h"
 #include "bricklib2/logging/logging.h"
@@ -101,7 +105,6 @@ void spitfp_init(SPITFP *st) {
 	// Configure ring buffer
 	memset(&st->buffer_recv, 0, SPITFP_RECEIVE_BUFFER_SIZE);
 	ringbuffer_init(&st->ringbuffer_recv, SPITFP_RECEIVE_BUFFER_SIZE, st->buffer_recv);
-
 
 	// USIC channel configuration
 	const XMC_SPI_CH_CONFIG_t channel_config = {
@@ -174,15 +177,25 @@ void spitfp_init(SPITFP *st) {
 	XMC_USIC_CH_TXFIFO_SetInterruptNodePointer(SPITFP_USIC, XMC_USIC_CH_TXFIFO_INTERRUPT_NODE_POINTER_STANDARD, SPITFP_SERVICE_REQUEST_TX);  // IRQ SPITFP_IRQ_TX
 
 	// Set service request for rx FIFO receive interrupt
+	#ifdef SPITFP_IRQ_NON_STANDARD
+		XMC_USIC_CH_SetInterruptNodePointer(SPITFP_USIC, XMC_USIC_CH_INTERRUPT_NODE_POINTER_RECEIVE, SPITFP_SERVICE_REQUEST_RX);  // IRQ SPITFP_IRQ_RX
+		XMC_USIC_CH_SetInterruptNodePointer(SPITFP_USIC, XMC_USIC_CH_INTERRUPT_NODE_POINTER_ALTERNATE_RECEIVE, SPITFP_SERVICE_REQUEST_RX); // IRQ SPITFP_IRQ_RX
+	#endif
 	XMC_USIC_CH_RXFIFO_SetInterruptNodePointer(SPITFP_USIC, XMC_USIC_CH_RXFIFO_INTERRUPT_NODE_POINTER_STANDARD, SPITFP_SERVICE_REQUEST_RX);  // IRQ SPITFP_IRQ_RX
 	XMC_USIC_CH_RXFIFO_SetInterruptNodePointer(SPITFP_USIC, XMC_USIC_CH_RXFIFO_INTERRUPT_NODE_POINTER_ALTERNATE, SPITFP_SERVICE_REQUEST_RX); // IRQ SPITFP_IRQ_RX
 
 	//Set priority and enable NVIC node for transmit interrupt
 	NVIC_SetPriority((IRQn_Type)SPITFP_IRQ_TX, SPITFP_IRQ_TX_PRIORITY);
+	#ifdef SPITFP_IRQ_TX_SCU_CTRL
+		XMC_SCU_SetInterruptControl(SPITFP_IRQ_TX, SPITFP_IRQ_TX_SCU_CTRL);
+	#endif
 	NVIC_EnableIRQ((IRQn_Type)SPITFP_IRQ_TX);
 
 	// Set priority and enable NVIC node for receive interrupt
 	NVIC_SetPriority((IRQn_Type)SPITFP_IRQ_RX, SPITFP_IRQ_RX_PRIORITY);
+	#ifdef SPITFP_IRQ_RX_SCU_CTRL
+		XMC_SCU_SetInterruptControl(SPITFP_IRQ_RX, SPITFP_IRQ_RX_SCU_CTRL);
+	#endif
 	NVIC_EnableIRQ((IRQn_Type)SPITFP_IRQ_RX);
 
 	// Start SPI
