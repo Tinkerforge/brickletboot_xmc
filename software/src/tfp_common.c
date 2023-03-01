@@ -330,13 +330,25 @@ BootloaderHandleMessageResponse tfp_common_write_firmware(const TFPCommonWriteFi
 
 	// If this is the last chunk of one page, we write it to flash
 	if(chunk_num == ((TFP_COMMON_XMC1_PAGE_SIZE/TFP_COMMON_BOOTLOADER_WRITE_CHUNK_SIZE) - 1)) {
+		// Find out if the current flash contents already match the page to be written
 		uint32_t *page_address = (uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + (tfp_common_firmware_pointer & TFP_COMMON_XMC1_PAGE_MASK));
-		__disable_irq();
-		XMC_FLASH_ErasePage(page_address);
-		while(XMC_FLASH_IsBusy());
-		XMC_FLASH_ProgramVerifyPage(page_address, (uint32_t*)tfp_common_firmware_page);
-		while(XMC_FLASH_IsBusy());
-		__enable_irq();
+		uint32_t *new_page = (uint32_t*)tfp_common_firmware_page;
+		bool flash = false;
+		for(uint32_t i = 0; i < TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t); i++) {
+			if(page_address[i] != new_page[i]) {
+				flash = true;
+				break;
+			}
+		}
+		// If the new page differs from the current flash contents, write it
+		if (flash) {
+			__disable_irq();
+			XMC_FLASH_ErasePage(page_address);
+			while(XMC_FLASH_IsBusy());
+			XMC_FLASH_ProgramVerifyPage(page_address, new_page);
+			while(XMC_FLASH_IsBusy());
+			__enable_irq();
+		}
 
 		// If this page is not the successor of the last page that we wrote
 		// we fill the other pages in with zero
@@ -346,10 +358,11 @@ BootloaderHandleMessageResponse tfp_common_write_firmware(const TFPCommonWriteFi
 			for(uint32_t page = tfp_common_firmware_last_page_written + 1; page < page_written; page++) {
 				// Find out if the page is already filled with zeroes
 				uint32_t *page_address = (uint32_t*)(BOOTLOADER_FIRMWARE_START_POS + (page * TFP_COMMON_XMC1_PAGE_SIZE));
-				bool flash = false;
+				flash = false;
 				for(uint32_t i = 0; i < TFP_COMMON_XMC1_PAGE_SIZE/sizeof(uint32_t); i++) {
 					if(page_address[i] != 0) {
 						flash = true;
+						break;
 					}
 				}
 				// If the flash is not filled with zeroes we write them
@@ -585,8 +598,8 @@ void tfp_common_handle_message(const void *message, const uint8_t length, Bootlo
 	}
 
 #ifdef BOOTLOADER_ISOLATOR
-	} 
-	
+	}
+
 	if(bs->boot_mode == BOOT_MODE_FIRMWARE) {
 		if(message_uid == 0) {
 			// Here the isolator firmware has to make sure that a message with uid 0 never directly returns
