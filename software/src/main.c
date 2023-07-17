@@ -100,7 +100,7 @@ void main_boot_pad_init(void) {
 	}
 #else
 	XMC_GPIO_Init(BOOTLOADER_BOOT_PAD_PIN, &boot_pad);
-	#endif
+#endif
 }
 #endif
 
