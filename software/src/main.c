@@ -86,11 +86,21 @@ void main_wdt_init(void) {
 void main_boot_pad_init(void) {
 	// Put boot pin in input pull-up mode, if the uses wants to force
 	// bootloader mode, he can jumper it to ground
+
 	XMC_GPIO_CONFIG_t boot_pad;
 	boot_pad.mode = XMC_GPIO_MODE_INPUT_PULL_UP;
 	boot_pad.output_level = XMC_GPIO_OUTPUT_LEVEL_HIGH;
 	boot_pad.input_hysteresis = XMC_GPIO_INPUT_HYSTERESIS_LARGE;
+#ifdef BOOTLOADER_BOOT_PAD_DEP_PIN
+	XMC_GPIO_Init(BOOTLOADER_BOOT_PAD_DEP_PIN, &boot_pad);
+	if(XMC_GPIO_GetInput(BOOTLOADER_BOOT_PAD_DEP_PIN)) {
+		XMC_GPIO_Init(BOOTLOADER_BOOT_PAD_HIGH_PIN, &boot_pad);
+	} else {
+		XMC_GPIO_Init(BOOTLOADER_BOOT_PAD_LOW_PIN, &boot_pad);
+	}
+#else
 	XMC_GPIO_Init(BOOTLOADER_BOOT_PAD_PIN, &boot_pad);
+	#endif
 }
 #endif
 
@@ -137,7 +147,11 @@ int main(void) {
 	const uint8_t can_jump_to_firmware = boot_can_jump_to_firmware();
 	if(
 #ifdef BOOTLOADER_ENABLE_BOOT_PAD
+#ifdef BOOTLOADER_BOOT_PAD_DEP_PIN
+	   ((XMC_GPIO_GetInput(BOOTLOADER_BOOT_PAD_DEP_PIN) && XMC_GPIO_GetInput(BOOTLOADER_BOOT_PAD_HIGH_PIN)) || (!XMC_GPIO_GetInput(BOOTLOADER_BOOT_PAD_DEP_PIN) && XMC_GPIO_GetInput(BOOTLOADER_BOOT_PAD_LOW_PIN))) &&
+#else
 	   XMC_GPIO_GetInput(BOOTLOADER_BOOT_PAD_PIN) &&
+#endif
 #endif
 	   (can_jump_to_firmware == TFP_COMMON_SET_BOOTLOADER_MODE_STATUS_OK)) {
 		boot_jump_to_firmware();
